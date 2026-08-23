@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Goal to Proof</title>
+  <desc id="desc">Goal to Proof logo with a goal-to-verification symbol.</desc>
+  <defs>
+    <linearGradient id="mark" x1="36" y1="24" x2="296" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7778FF"/>
+      <stop offset="1" stop-color="#4243C7"/>
+    </linearGradient>
+    <linearGradient id="proof" x1="174" y1="102" x2="266" y2="222" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8F5E6"/>
+      <stop offset="1" stop-color="#79D8C1"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="288" height="288" rx="72" fill="#0D1224"/>
+  <rect x="28" y="28" width="264" height="264" rx="64" fill="url(#mark)" opacity=".18"/>
+  <circle cx="96" cy="160" r="38" fill="none" stroke="#FFFFFF" stroke-width="18"/>
+  <circle cx="96" cy="160" r="10" fill="#B8F5E6"/>
+  <path d="M134 160h52" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
+  <path d="m166 138 25 22-25 22" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="184" y="108" width="76" height="104" rx="24" fill="url(#proof)"/>
+  <path d="m203 160 15 15 27-33" fill="none" stroke="#22245E" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="360" y="146" fill="#0D1224" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="82" font-weight="760" letter-spacing="-3">Goal to Proof</text>
+  <text x="364" y="208" fill="#5A6278" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="31" font-weight="520" letter-spacing=".2">Finish the work. Prove the outcome.</text>
+</svg>

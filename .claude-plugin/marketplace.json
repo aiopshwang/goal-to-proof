@@ -1,0 +1,19 @@
+{
+  "name": "goal-to-proof",
+  "description": "Official marketplace for the Goal to Proof AI agent skill.",
+  "owner": {
+    "name": "Hyunsik Hwang"
+  },
+  "plugins": [
+    {
+      "name": "goal-to-proof",
+      "description": "Finish authorized, non-trivial AI agent work with direct, scope-matched evidence.",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Hyunsik Hwang"
+      },
+      "homepage": "https://aiopshwang.github.io/goal-to-proof/"
+    }
+  ]
+}

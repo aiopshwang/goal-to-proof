@@ -1,0 +1,10 @@
+interface:
+  display_name: "Goal to Proof"
+  short_description: "Finish authorized work with direct evidence"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/logo.svg"
+  brand_color: "#5B5CF0"
+  default_prompt: "Use $goal-to-proof to finish this authorized work and prove the requested outcome with direct evidence."
+
+policy:
+  allow_implicit_invocation: true

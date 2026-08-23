@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Goal to Proof — AI Agent Completion Verification Skill</title>
+  <meta name="description" content="Goal to Proof is a lightweight Agent Skill that carries authorized, non-trivial AI-agent work to an observed outcome with direct, scope-matched evidence.">
+  <meta name="author" content="Hyunsik Hwang">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://aiopshwang.github.io/goal-to-proof/">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Goal to Proof">
+  <meta property="og:title" content="Goal to Proof — Finish AI Agent Work and Prove It">
+  <meta property="og:description" content="A lightweight closure contract that turns authorized, non-trivial AI-agent work into an observed outcome—not a plausible completion claim.">
+  <meta property="og:url" content="https://aiopshwang.github.io/goal-to-proof/">
+  <meta property="og:image" content="https://aiopshwang.github.io/goal-to-proof/social-card.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Goal to Proof — Finish the work. Prove the outcome.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Goal to Proof">
+  <meta name="twitter:description" content="Make AI agents do the right work, finish it, and prove it.">
+  <meta name="twitter:image" content="https://aiopshwang.github.io/goal-to-proof/social-card.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "https://aiopshwang.github.io/goal-to-proof/#software",
+        "name": "Goal to Proof",
+        "alternateName": "goal-to-proof",
+        "description": "A lightweight closure contract that carries authorized, non-trivial AI-agent work to an observed outcome with direct, scope-matched evidence.",
+        "codeRepository": "https://github.com/aiopshwang/goal-to-proof",
+        "url": "https://aiopshwang.github.io/goal-to-proof/",
+        "license": "https://opensource.org/license/mit",
+        "version": "1.0.0",
+        "programmingLanguage": ["Markdown", "YAML", "JSON"],
+        "isAccessibleForFree": true,
+        "keywords": "Agent Skills, AI agents, completion verification, evidence, Codex skill, Claude Code plugin",
+        "author": {
+          "@type": "Person",
+          "name": "Hyunsik Hwang",
+          "url": "https://github.com/aiopshwang"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://aiopshwang.github.io/goal-to-proof/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Goal to Proof?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Goal to Proof is a lightweight closure contract for AI agents. It carries authorized, non-trivial work to an observed outcome and requires direct, scope-matched evidence before completion is claimed."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is AI agent completion verification?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AI agent completion verification maps each in-scope requirement to evidence from the latest relevant state, using the real target or integration boundary when practical. It separates artifact existence and proxy checks from proof of the requested outcome."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Goal to Proof give an AI agent more authority?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The user retains goals, values, authority, risk tolerance, and material decisions. The agent owns method, execution, diagnostics, and verification only inside the authorized boundary."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Goal to Proof an SEO or GEO tool?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Goal to Proof is an AI-agent completion skill, not a ranking tool. It can help verify an authorized publishing workflow, but it makes no search-ranking claim. Its documentation uses ordinary search fundamentals and clear, source-linked answers for human and machine readers."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="nav-wrap">
+      <a class="brand" href="index.html" aria-label="Goal to Proof home"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="methodology.html">Methodology</a>
+        <a href="benchmarks.html">Validation</a>
+        <a href="comparison.html">Compare</a>
+        <a href="faq.html">FAQ</a>
+        <a href="https://github.com/aiopshwang/goal-to-proof">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero container">
+      <span class="eyebrow">Open-source Agent Skill</span>
+      <h1>Finish the work.<br><span>Prove the outcome.</span></h1>
+      <p class="lede">Goal to Proof is a lightweight closure contract for AI agents: turn authorized, non-trivial work into an observed outcome—not a plausible completion claim.</p>
+      <div class="hero-actions">
+        <a class="button" href="#install">Install Goal to Proof</a>
+        <a class="button secondary" href="methodology.html">Read the method</a>
+      </div>
+      <div class="hero-install">
+        <pre><code>npx skills add aiopshwang/goal-to-proof</code></pre>
+        <span>Agent Skills</span>
+      </div>
+    </section>
+
+    <div class="container proof-strip">
+      <div><strong>Scope-matched proof</strong><span>Evidence is as broad as the claim.</span></div>
+      <div><strong>User-owned authority</strong><span>No silent scope or permission expansion.</span></div>
+      <div><strong>Low ceremony</strong><span>Process appears only when closure needs it.</span></div>
+    </div>
+
+    <section class="section tint" id="definition">
+      <div class="container">
+        <span class="section-label">Definition</span>
+        <h2>What is Goal to Proof?</h2>
+        <p class="section-intro">Goal to Proof is an AI agent completion-verification skill. It prevents an agent from substituting a plan, placeholder, partial artifact, isolated check, or unobserved external action for the requested result.</p>
+        <div class="failure-path">
+          <div><small>01 · Artifact</small><strong>Something exists</strong><p class="muted">A file, change, or record was created.</p></div>
+          <div><small>02 · Focused check</small><strong>One layer passes</strong><p class="muted">Syntax, unit test, citation, or schema is valid.</p></div>
+          <div><small>03 · Integration</small><strong>Parts work together</strong><p class="muted">The connected workflow runs.</p></div>
+          <div><small>04 · Target</small><strong>The real boundary works</strong><p class="muted">The user, device, render, account, or remote sees it.</p></div>
+          <div><small>05 · Outcome</small><strong>The claim is observed</strong><p class="muted">Stop at the first layer that directly proves the request.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <span class="section-label">Closure contract</span>
+        <h2>Four fields. One honest finish.</h2>
+        <p class="section-intro">The fields stay internal when obvious and become visible only when ambiguity or authority could change the work.</p>
+        <div class="grid-4">
+          <article class="card"><span class="card-number">R</span><h3>Result</h3><p>What must be different when the task is done?</p></article>
+          <article class="card"><span class="card-number">T</span><h3>Target</h3><p>Who or what must be able to use or observe it?</p></article>
+          <article class="card"><span class="card-number">P</span><h3>Proof</h3><p>What direct observation separates success from plausible failure?</p></article>
+          <article class="card"><span class="card-number">B</span><h3>Boundaries</h3><p>What is authorized, excluded, or requires the user?</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tint">
+      <div class="container">
+        <span class="section-label">Responsibility</span>
+        <h2>Autonomy without taking over.</h2>
+        <p class="section-intro">The user and agent have different jobs. Making the split explicit prevents both approval theater and unauthorized action.</p>
+        <div class="split-panel">
+          <div>
+            <h3>The user owns</h3>
+            <ul class="check-list">
+              <li>Goals and values</li>
+              <li>Authority and risk tolerance</li>
+              <li>Material product choices</li>
+              <li>External and irreversible decisions</li>
+              <li>Final judgment</li>
+            </ul>
+          </div>
+          <div>
+            <h3>The agent owns inside the boundary</h3>
+            <ul class="check-list">
+              <li>Method and sequencing</li>
+              <li>Reversible implementation choices</li>
+              <li>Diagnostics and evidence gathering</li>
+              <li>Authorized execution</li>
+              <li>Verification and precise reporting</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <span class="section-label">Activation</span>
+        <h2>Use it where “done” can be misleading.</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Good fit</h3>
+            <ul class="check-list">
+              <li>Dependent, multi-step deliverables</li>
+              <li>Features and fixes with a real user path</li>
+              <li>Deployment or publication with remote state</li>
+              <li>Documents and visuals that need final rendering</li>
+              <li>Research with material, sourceable claims</li>
+              <li>Evidence-backed diagnoses, decisions, or executable plans as final deliverables</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Not an implicit fit</h3>
+            <ul class="x-list">
+              <li>Simple questions and direct answers</li>
+              <li>Translation or formatting</li>
+              <li>Open-ended ideation without a defined deliverable</li>
+              <li>Routine self-contained edits with an obvious direct check</li>
+              <li>Read-only answers that do not exercise a target workflow</li>
+              <li>Generic discovery or autonomous goal ownership</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tint" id="install">
+      <div class="container">
+        <span class="section-label">Install</span>
+        <h2>One canonical skill, three distribution paths.</h2>
+        <p class="section-intro">The repository root is the plugin root. Platform packages point to the same canonical <code>skills/goal-to-proof/SKILL.md</code>.</p>
+        <div class="install-grid">
+          <article class="install-card">
+            <div><h3>Agent Skills</h3><p class="muted">Portable installer for supported skill hosts.</p></div>
+            <pre><code>npx skills add aiopshwang/goal-to-proof</code></pre>
+          </article>
+          <article class="install-card">
+            <div><h3>Codex marketplace</h3><p class="muted">Add the repository catalog, then install the plugin.</p></div>
+            <pre><code>codex plugin marketplace add aiopshwang/goal-to-proof
+codex plugin add goal-to-proof@goal-to-proof</code></pre>
+          </article>
+          <article class="install-card">
+            <div><h3>Claude Code marketplace</h3><p class="muted">Install as a namespaced managed plugin.</p></div>
+            <pre><code>claude plugin marketplace add aiopshwang/goal-to-proof
+claude plugin install goal-to-proof@goal-to-proof</code></pre>
+          </article>
+        </div>
+        <div class="callout"><strong>Explicit invocation:</strong> use <code>$goal-to-proof</code> in Codex. In a Claude Code managed plugin install, use <code>/goal-to-proof:goal-to-proof</code>; a standalone skill may be exposed as <code>/goal-to-proof</code>.</div>
+        <p class="muted">Package presence is not a blanket compatibility claim. See <a href="benchmarks.html">validation evidence and claim levels</a> for what each check proves.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <span class="section-label">Origin</span>
+        <h2>Distilled from real work. Published without private work.</h2>
+        <p class="section-intro">The initial contract came from aggregate analysis of prior real working sessions. Repeated behaviors—not private content or corpus metadata—became the public principles.</p>
+        <div class="grid-3">
+          <article class="card"><h3>Patterns retained</h3><p>Intent alignment, scope control, authorized autonomy, end-to-end proof, durable checkpoints, and evidence-first reporting.</p></article>
+          <article class="card"><h3>Material excluded</h3><p>Raw conversations, personal names, secrets, one-off preferences, private content, and session transcripts.</p></article>
+          <article class="card"><h3>Claim boundary</h3><p>The corpus counts explain the source of the design. They are not a benchmark or proof of performance.</p></article>
+        </div>
+        <p class="more-link"><a href="methodology.html">Read the methodology →</a></p>
+      </div>
+    </section>
+
+    <section class="section tint" aria-labelledby="home-faq">
+      <div class="narrow">
+        <span class="section-label">Quick answers</span>
+        <h2 id="home-faq">Frequently asked</h2>
+        <div class="faq-list">
+        <details><summary>Does it give the agent more permission?</summary><p>No. Goal to Proof makes the current authorization boundary more explicit. Publication, spending, disclosure, irreversible action, and material scope expansion still require user authority.</p></details>
+          <details><summary>Is this just “run the tests”?</summary><p>No. Tests can be excellent proof for a software claim, but the requested boundary might be a rendered document, a public release, an account state, or a research conclusion. Proof must match the claim.</p></details>
+          <details><summary>Does it guarantee completion?</summary><p>No. Tools, permissions, environments, and the task itself can block completion. The skill requires the agent to report the verified layer and name what remains unverified.</p></details>
+          <details><summary>Is Goal to Proof an SEO or GEO product?</summary><p>No. It is an AI-agent completion skill. This site uses conventional search fundamentals and clear, source-linked answers, but the project makes no ranking claim. See the <a href="faq.html#seo-geo">SEO/GEO answer</a>.</p></details>
+        </div>
+        <p class="more-link"><a href="faq.html">Read all questions →</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a>
+        <p class="footer-note">Make AI agents do the right work, finish it, and prove it.</p>
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="https://github.com/aiopshwang/goal-to-proof/blob/main/LICENSE">MIT License</a>
+        <a href="https://github.com/aiopshwang/goal-to-proof">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "goal-to-proof",
+  "version": "1.0.0",
+  "description": "Finish authorized, non-trivial AI agent work with direct, scope-matched evidence.",
+  "author": {
+    "name": "Hyunsik Hwang"
+  },
+  "homepage": "https://aiopshwang.github.io/goal-to-proof/",
+  "repository": "https://github.com/aiopshwang/goal-to-proof",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "ai-agents",
+    "verification",
+    "outcomes",
+    "claude-code",
+    "workflow",
+    "completion"
+  ]
+}

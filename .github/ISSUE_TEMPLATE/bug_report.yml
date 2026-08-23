@@ -1,0 +1,64 @@
+name: Bug report
+description: Report incorrect activation, behavior, packaging, or documentation.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Goal to Proof. Remove private data, secrets, and raw conversations before submitting.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Agent Skill
+        - Codex plugin
+        - Claude Code plugin
+        - Documentation or website
+        - Evaluation tooling
+        - Other Agent Skills client
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Goal to Proof version or commit
+      placeholder: v1.0.0 or commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: Sanitized request
+      description: Share the smallest request that reproduces the behavior. Remove private or identifying details.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Observed behavior and evidence
+      description: Include relevant logs, commands, or artifacts after removing secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, client and version, model if relevant, installation method
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets, personal data, and private conversation content.
+          required: true

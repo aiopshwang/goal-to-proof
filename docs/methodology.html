@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Methodology — Goal to Proof</title>
+  <meta name="description" content="How Goal to Proof was distilled from aggregate work patterns into a privacy-preserving AI-agent closure contract with claim-shaped proof.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <link rel="canonical" href="https://aiopshwang.github.io/goal-to-proof/methodology.html">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Goal to Proof Methodology">
+  <meta property="og:description" content="From repeated real-work patterns to a narrow, evidence-first closure contract—without publishing raw conversations.">
+  <meta property="og:url" content="https://aiopshwang.github.io/goal-to-proof/methodology.html">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="nav-wrap"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a><nav class="nav-links" aria-label="Primary navigation"><a href="methodology.html" aria-current="page">Methodology</a><a href="benchmarks.html">Validation</a><a href="comparison.html">Compare</a><a href="faq.html">FAQ</a><a href="https://github.com/aiopshwang/goal-to-proof">GitHub ↗</a></nav></div></header>
+
+  <main id="main">
+    <header class="article-hero"><div class="narrow"><span class="section-label">Methodology</span><h1>From repeated work patterns to a narrow closure contract.</h1><p class="lede">Goal to Proof was designed from aggregate behavioral evidence, then reduced until every retained instruction protected one job: reaching and proving the authorized outcome.</p></div></header>
+    <article class="article narrow">
+      <h2>The source corpus</h2>
+      <p>The initial analysis covered prior real task conversations rather than synthetic benchmark prompts. Private corpus contents, counts, and session metadata are not published. The source material informed the design; it does not measure skill quality or establish a success rate.</p>
+      <p>The analysis asked which operating patterns remained stable across different kinds of work. Recurring themes included understanding the actual requested result, using current evidence when facts could change, separating now/later/out-of-scope work, acting autonomously inside an approved boundary, completing meaningful end-to-end slices, verifying the actual target environment, preserving durable checkpoints, and reporting evidence precisely.</p>
+
+      <div class="callout"><strong>Privacy boundary:</strong> raw conversations were never included in the public repository. Personal names, secrets, private content, session transcripts, and one-off preferences were excluded. Only abstract, recurring work patterns were retained.</div>
+
+      <h2>Distillation process</h2>
+      <ol>
+        <li><strong>Separate signal from biography.</strong> Behavior that depended on a specific person, project, tool, or temporary preference was removed.</li>
+        <li><strong>Find repeatable failure modes.</strong> The analysis focused on where work looked complete but failed at the requested boundary: plan instead of change, component instead of integration, local artifact instead of public state, or proxy instead of outcome.</li>
+        <li><strong>Assign authority deliberately.</strong> Goals, values, material choices, and boundary actions stayed with the user. Method, execution, diagnostics, and verification inside the boundary became the agent's responsibility.</li>
+        <li><strong>Reduce to a closure contract.</strong> Broad owner philosophy, product discovery, and full software-development methodology were removed from the core. The retained model became Result, Target, Proof, and Boundaries.</li>
+        <li><strong>Design positive and negative activation cases.</strong> Non-trivial diagnoses, evidence-backed decisions, and executable plans can be final deliverables; simple answers, translation, formatting, open-ended ideation, obvious self-contained edits, and read-only answers with no target workflow should not acquire a heavy workflow.</li>
+        <li><strong>Make proof claim-shaped.</strong> Completion evidence must match the scope of the claim, come after the latest relevant change, and exercise the real target boundary when practical.</li>
+      </ol>
+
+      <h2>Why a closure contract?</h2>
+      <p>Many agent frameworks improve reasoning, planning, or software-development technique. Those can be valuable, but they solve a broader job. Goal to Proof targets a smaller gap: an agent can follow a good plan and still stop before the requested outcome is observed.</p>
+      <p>A closure contract creates a practical invariant:</p>
+      <div class="callout"><strong>An in-scope requirement is not complete until the agent has evidence that directly supports that completion claim—or reports the missing verification layer without implying success.</strong></div>
+
+      <h2>Result, Target, Proof, Boundaries</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Question</th><th>Failure it prevents</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Result</strong></td><td>What must be different?</td><td>Delivering a convenient artifact instead of the requested change.</td></tr>
+          <tr><td><strong>Target</strong></td><td>Who or what must use or observe it?</td><td>Validating an isolated component while ignoring the real environment.</td></tr>
+          <tr><td><strong>Proof</strong></td><td>What direct observation distinguishes success?</td><td>Treating artifact existence or a proxy check as outcome evidence.</td></tr>
+          <tr><td><strong>Boundaries</strong></td><td>What is authorized, excluded, or user-owned?</td><td>Expanding scope or taking an external action without authority.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>The proof ladder</h2>
+      <p>Evidence commonly progresses through five layers: artifact inspection, focused checks, integrated execution, target observation, and outcome evidence. Higher is not automatically better. The right stopping point is the lowest practical layer that directly proves the user's claim.</p>
+      <p>For example, a syntax check may fully prove that a configuration file parses. It does not prove that the deployed service uses that configuration. A remote read-back may prove that a release is public. It does not prove that users achieved a business outcome unless that was part of the request and evidence exists.</p>
+
+      <h2>Low ceremony by design</h2>
+      <p>The skill does not require a visible worksheet for every task. If result, target, proof, and boundaries are obvious, the agent can act and verify directly. Planning, root-cause analysis, research, subagents, and checkpoints are used only when they reduce a real risk.</p>
+      <p>This is also why activation boundaries matter. A short factual answer should remain a short factual answer. A non-trivial executable plan can use the closure contract when the plan itself is the result, but the agent should not infer permission to implement beyond that deliverable.</p>
+
+      <h2>Standards and primary references</h2>
+      <p>The canonical package follows the open <a href="https://agentskills.io/specification">Agent Skills specification</a>. Codex packaging follows OpenAI's <a href="https://developers.openai.com/plugins/build/plugins">official plugin documentation</a>, while Claude Code packaging follows Anthropic's <a href="https://code.claude.com/docs/en/plugin-marketplaces">plugin marketplace</a> and <a href="https://code.claude.com/docs/en/slash-commands">skills</a> documentation.</p>
+      <p>The public website uses conventional crawlable HTML, descriptive titles, canonical URLs, internal links, and source-linked explanations. Google describes optimization for generative AI search as an extension of established search practices and states that no special AI schema is required; see <a href="https://developers.google.com/search/docs/fundamentals/ai-optimization-guide">Google Search Central's generative AI guide</a>. The term “GEO” was formalized in the research paper <a href="https://arxiv.org/abs/2311.09735">Generative Engine Optimization</a>. Neither source supports a guaranteed ranking claim for this project.</p>
+
+      <h2>Limitations</h2>
+      <ul>
+        <li>A limited source corpus may encode selection bias even after personal details are removed.</li>
+        <li>Instruction quality does not guarantee model compliance, tool access, or task success.</li>
+        <li>Host packaging can change; validation evidence must name the host, version, and exercised path.</li>
+        <li>Behavior evaluations are sensitive to model, environment, permissions, and task wording.</li>
+        <li>The project does not claim universal productivity gains or a general completion percentage.</li>
+      </ul>
+
+      <h2>How the method can evolve</h2>
+      <p>Changes should be driven by reproducible failure cases. A proposed instruction needs both a positive case and an adjacent negative case, plus evidence that it improves closure without broadening authority or adding ceremony to simple work. Release-specific evidence belongs in versioned evaluation artifacts and release notes.</p>
+      <p><a href="benchmarks.html">See the validation and benchmark contract →</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-grid"><div><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a><p class="footer-note">Observed outcomes over plausible completion claims.</p></div><div class="footer-links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/aiopshwang/goal-to-proof">GitHub</a></div></div></footer>
+</body>
+</html>

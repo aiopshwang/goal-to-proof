@@ -1,0 +1,20 @@
+{
+  "name": "goal-to-proof",
+  "interface": {
+    "displayName": "Goal to Proof"
+  },
+  "plugins": [
+    {
+      "name": "goal-to-proof",
+      "source": {
+        "source": "url",
+        "url": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

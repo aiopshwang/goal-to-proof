@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Goal to Proof icon</title>
+  <desc id="desc">A goal circle connects to a verified check.</desc>
+  <defs>
+    <linearGradient id="background" x1="48" y1="40" x2="464" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7778FF"/>
+      <stop offset="1" stop-color="#4243C7"/>
+    </linearGradient>
+    <linearGradient id="proof" x1="290" y1="172" x2="422" y2="348" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8F5E6"/>
+      <stop offset="1" stop-color="#79D8C1"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="#0D1224"/>
+  <path d="M68 256C68 152.17 152.17 68 256 68c103.83 0 188 84.17 188 188 0 103.83-84.17 188-188 188C152.17 444 68 359.83 68 256Z" fill="url(#background)" opacity=".16"/>
+  <circle cx="154" cy="256" r="66" fill="none" stroke="#FFFFFF" stroke-width="28"/>
+  <circle cx="154" cy="256" r="18" fill="#B8F5E6"/>
+  <path d="M220 256h82" fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
+  <path d="m276 221 40 35-40 35" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="310" y="174" width="132" height="164" rx="40" fill="url(#proof)"/>
+  <path d="m342 256 27 27 48-57" fill="none" stroke="#22245E" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

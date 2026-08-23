@@ -1,0 +1,47 @@
+{
+  "name": "goal-to-proof",
+  "version": "1.0.0",
+  "description": "Finish authorized, non-trivial AI agent work with direct, scope-matched evidence.",
+  "author": {
+    "name": "Hyunsik Hwang",
+    "url": "https://github.com/aiopshwang"
+  },
+  "homepage": "https://aiopshwang.github.io/goal-to-proof/",
+  "repository": "https://github.com/aiopshwang/goal-to-proof",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "ai-agents",
+    "verification",
+    "outcomes",
+    "codex",
+    "claude-code",
+    "workflow",
+    "completion"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Goal to Proof",
+    "shortDescription": "Finish non-trivial work with direct evidence",
+    "longDescription": "Goal to Proof gives AI agents a lightweight closure contract: carry authorized, non-trivial work through dependent steps and integration boundaries, then prove the requested result with direct, scope-matched evidence.",
+    "developerName": "Hyunsik Hwang",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://aiopshwang.github.io/goal-to-proof/",
+    "privacyPolicyURL": "https://aiopshwang.github.io/goal-to-proof/privacy.html",
+    "termsOfServiceURL": "https://aiopshwang.github.io/goal-to-proof/terms.html",
+    "defaultPrompt": [
+      "Use Goal to Proof to finish this work and verify the real outcome.",
+      "Carry this approved change through integration and direct proof.",
+      "Audit this task against its requested outcome before calling it done."
+    ],
+    "brandColor": "#5B5CF0",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/logo.svg",
+    "screenshots": []
+  }
+}

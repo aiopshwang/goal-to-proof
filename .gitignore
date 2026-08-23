@@ -1,0 +1,38 @@
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# JavaScript
+node_modules/
+.npm/
+.yarn/
+
+# Generated output
+build/
+dist/
+eval-results/
+coverage/
+.nyc_output/
+*.log
+tmp/
+.tmp/

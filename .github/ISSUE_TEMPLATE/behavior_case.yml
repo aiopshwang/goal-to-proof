@@ -1,0 +1,43 @@
+name: Behavior case
+description: Propose a reproducible case that should activate, stay quiet, or test a safety boundary.
+title: "[Case]: "
+labels:
+  - evaluation
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Case type
+      options:
+        - Should activate implicitly
+        - Should not activate implicitly
+        - Explicit invocation behavior
+        - Authority or safety boundary
+        - Proof or completion claim
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Reproducible fixture and prompt
+      description: Use synthetic data only. Describe the starting files, prompt, and allowed actions.
+    validations:
+      required: true
+  - type: textarea
+    id: oracle
+    attributes:
+      label: Independent success oracle
+      description: What observable state distinguishes success from a plausible-looking failure?
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden or out-of-scope behavior
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: This proposal contains no secrets, personal data, or private conversation content.
+          required: true

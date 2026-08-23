@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use Goal to Proof in research or an evaluation, please cite it with this metadata."
+title: "Goal to Proof: A Lightweight Closure Contract for AI Agents"
+type: software
+authors:
+  - family-names: Hwang
+    given-names: Hyunsik
+    alias: aiopshwang
+repository-code: "https://github.com/aiopshwang/goal-to-proof"
+url: "https://aiopshwang.github.io/goal-to-proof/"
+license: MIT
+version: 1.0.0
+date-released: 2026-08-23
+keywords:
+  - agent skills
+  - AI agents
+  - completion verification
+  - evidence
+  - Codex
+  - Claude Code
+abstract: >-
+  Goal to Proof is a lightweight behavior contract that carries authorized,
+  non-trivial AI-agent work to an observed outcome and requires direct,
+  scope-matched evidence before completion is claimed.

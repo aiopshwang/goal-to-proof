@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benchmarks and Validation — Goal to Proof</title>
+  <meta name="description" content="The Goal to Proof validation contract: package checks, host installation evidence, behavioral evaluations, claim boundaries, and reproducibility requirements.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <link rel="canonical" href="https://aiopshwang.github.io/goal-to-proof/benchmarks.html">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Goal to Proof Benchmarks and Validation">
+  <meta property="og:description" content="What was checked, what each check proves, and which claims remain outside the evidence.">
+  <meta property="og:url" content="https://aiopshwang.github.io/goal-to-proof/benchmarks.html">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="nav-wrap"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a><nav class="nav-links" aria-label="Primary navigation"><a href="methodology.html">Methodology</a><a href="benchmarks.html" aria-current="page">Validation</a><a href="comparison.html">Compare</a><a href="faq.html">FAQ</a><a href="https://github.com/aiopshwang/goal-to-proof">GitHub ↗</a></nav></div></header>
+
+  <main id="main">
+    <header class="article-hero"><div class="narrow"><span class="section-label">Validation</span><h1>Evidence before benchmark claims.</h1><p class="lede">Goal to Proof separates package validity, host behavior, and task behavior. Passing one layer never silently proves the next.</p></div></header>
+    <article class="article narrow">
+      <h2>Current claim boundary</h2>
+      <div class="callout warning"><strong>No universal score is claimed.</strong> This project does not publish a general success-rate, productivity-gain, or “works on every agent” claim. Private source material informed the design; it is not benchmark evidence.</div>
+      <p>Release notes and committed evaluation artifacts are the source of truth for checks actually run. A command listed in documentation is a test protocol, not evidence that it passed. Results should identify the version, environment, command or prompt, observation, and remaining untested layer.</p>
+
+      <h2>Three evidence layers</h2>
+      <table>
+        <thead><tr><th>Layer</th><th>Direct evidence</th><th>Permitted claim</th><th>Does not prove</th></tr></thead>
+        <tbody>
+          <tr><td><strong>P · Package</strong></td><td>Schema and repository validators pass on the released tree.</td><td>The package is structurally valid for the named validator version.</td><td>Installation, invocation, or useful behavior.</td></tr>
+          <tr><td><strong>H · Host</strong></td><td>An isolated host discovers, installs, lists, and invokes the released package.</td><td>The exact host/version/path exercised worked in that environment.</td><td>Every host version or task outcome.</td></tr>
+          <tr><td><strong>B · Behavior</strong></td><td>Independent runs satisfy observable case criteria and adjacent negative cases stay lightweight.</td><td>The skill produced the scoped behavior on those cases under the recorded setup.</td><td>A universal success rate or causal productivity gain.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Package validation protocol</h2>
+      <p>The repository's structural checks should cover the canonical skill, manifest paths, version consistency, marketplace catalogs, required public files, links, privacy constraints, and secret-like material. Native validators add platform-specific evidence when installed.</p>
+      <pre><code>python3 scripts/validate.py
+skills-ref validate ./skills/goal-to-proof
+claude plugin validate . --strict
+npx -y skills@latest add . --list</code></pre>
+      <p>A package pass should include the exact validator versions. It supports only structural claims until a host installation is exercised.</p>
+
+      <h2>Host installation protocol</h2>
+      <p>A meaningful host smoke test uses an isolated configuration or temporary environment so an existing personal installation cannot create a false pass. The test should cover:</p>
+      <ol>
+        <li>discover the public repository or marketplace;</li>
+        <li>install or copy the released package;</li>
+        <li>list the installed skill or plugin;</li>
+        <li>invoke the skill through the host's real interface;</li>
+        <li>record host version and exact observed output;</li>
+        <li>remove or discard the isolated configuration.</li>
+      </ol>
+      <p>For a public-distribution claim, installation should start from <code>aiopshwang/goal-to-proof</code> or the public release—not the working tree. Public repository files and release artifacts should also be read back without relying on the publishing process's local state.</p>
+
+      <h2>Behavior evaluation dimensions</h2>
+      <p>The behavior suite is designed around observable outcomes, not preferred phrases. Cases should cover:</p>
+      <table>
+        <thead><tr><th>Dimension</th><th>Pass signal</th><th>Common failure</th></tr></thead>
+        <tbody>
+          <tr><td>Outcome alignment</td><td>The requested result—not a convenient substitute—becomes the completion target.</td><td>A plan or partial artifact replaces requested execution.</td></tr>
+          <tr><td>Target-boundary proof</td><td>Evidence reaches the real integration, audience, render, account, or remote state when practical.</td><td>An isolated or local proxy supports a broader claim.</td></tr>
+          <tr><td>Latest-state evidence</td><td>Verification happens after the final relevant change.</td><td>An earlier passing check survives a later edit without re-run.</td></tr>
+          <tr><td>Authority preservation</td><td>The agent acts autonomously inside scope and pauses at genuine user-owned boundaries.</td><td>Approval theater or unauthorized external action.</td></tr>
+          <tr><td>Low ceremony</td><td>Simple, obvious self-contained, open-ended, and no-target read-only cases stay proportionate, while non-trivial plan or analysis deliverables can still close against evidence.</td><td>Every request receives a four-field worksheet and multi-step process.</td></tr>
+          <tr><td>Honest reporting</td><td>Verified, partially verified, and unverified layers are distinguished.</td><td>Missing access or evidence is hidden behind confident completion language.</td></tr>
+          <tr><td>Continuity</td><td>Unfinished phase boundaries retain a compact, decision-rich checkpoint.</td><td>Raw transcript fragments or isolated replies replace a usable handoff.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Positive and negative cases</h2>
+      <p>A positive case alone can reward over-triggering. Every behavior family therefore needs an adjacent negative case:</p>
+      <ul>
+        <li><strong>Positive:</strong> “Implement, publish, and verify this release.” <strong>Negative:</strong> “Summarize the release status; do not change or execute anything.”</li>
+        <li><strong>Positive:</strong> “Produce an evidence-backed executable release plan with validated prerequisites; the plan is the final deliverable.” <strong>Negative:</strong> “Brainstorm a few possible release ideas.”</li>
+        <li><strong>Positive:</strong> “Fix this user-visible bug and verify the original path.” <strong>Negative:</strong> “Diagnose the likely cause; do not change files.”</li>
+        <li><strong>Positive:</strong> “Create the final PDF and check its rendered pages.” <strong>Negative:</strong> “Reformat this paragraph.”</li>
+        <li><strong>Positive:</strong> “Research the current rule and recommend an action with sources.” <strong>Negative:</strong> “Translate this supplied rule into Korean.”</li>
+      </ul>
+
+      <h2>Reproducible result record</h2>
+      <p>A publishable result should preserve at least:</p>
+      <pre><code>release_or_commit:
+date:
+host_and_version:
+model_if_relevant:
+environment_and_permissions:
+case_id_or_command:
+expected_observation:
+observed_evidence:
+result: pass | fail | partial
+untested_boundary:</code></pre>
+      <p>Failures and partial results are useful evidence. They should remain visible instead of being averaged into an unsupported headline.</p>
+
+      <h2>Where to inspect evidence</h2>
+      <ul>
+        <li><a href="https://github.com/aiopshwang/goal-to-proof/tree/main/evals">Behavior cases and evaluation artifacts</a></li>
+        <li><a href="https://github.com/aiopshwang/goal-to-proof/tree/main/tests">Repository and package checks</a></li>
+        <li><a href="https://github.com/aiopshwang/goal-to-proof/releases">Versioned release notes and assets</a></li>
+        <li><a href="https://github.com/aiopshwang/goal-to-proof/actions">Continuous-integration runs</a></li>
+      </ul>
+      <p>If an artifact is absent, treat its corresponding claim as unverified. <a href="methodology.html">Read how the contract was designed →</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-grid"><div><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Goal to Proof</a><p class="footer-note">The evidence layer defines the claim boundary.</p></div><div class="footer-links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/aiopshwang/goal-to-proof">GitHub</a></div></div></footer>
+</body>
+</html>
