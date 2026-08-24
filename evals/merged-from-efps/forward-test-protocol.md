@@ -32,8 +32,9 @@ paths, personal or company identifiers, credentials, or unrelated record content
 summary in a dated results directory only after the run and a privacy review; never
 pre-populate outcomes.
 
-Identify the evaluated skill with `python scripts/fingerprint_skill.py`. The canonical
-fingerprint sorts every file by its case-folded POSIX-style relative path, hashes each file with SHA-256,
+Identify the evaluated skill with `python scripts/fingerprint_skill.py` in the original
+`evidence-first-problem-solving` repository. The canonical fingerprint sorts every file
+by its case-folded POSIX-style relative path, hashes each file with SHA-256,
 joins `relative/path=file_sha256` entries with a single LF and no trailing LF, then hashes
 that UTF-8 manifest with SHA-256. Publish the bundle fingerprint; retain the command output
 when per-file auditability is needed.

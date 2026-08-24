@@ -36,10 +36,7 @@ For clear, low-risk work, act and verify without process ceremony. For dependent
 
 Prefer a meaningful end-to-end slice over disconnected partial work. Do not perform ritual root-cause analysis or repeated “why” questioning; use it only when symptoms, repeated failure, or conflicting evidence indicate that the apparent task may not be the cause.
 
-When the cause is genuinely contested, evidence conflicts, or competing
-hypotheses must be separated before a safe fix, read
-[diagnosis and proof](references/diagnosis-and-proof.md) and run the
-cheapest check that meaningfully discriminates among explanations.
+When the cause is genuinely contested, evidence conflicts, or competing hypotheses must be separated before a safe fix, read [diagnosis and proof](references/diagnosis-and-proof.md) and run the cheapest check that meaningfully discriminates among explanations.
 
 Continue while a safe, authorized, relevant action can advance the outcome or produce decision-changing evidence. Change the hypothesis or approach when retries stop producing new information. Do not silently substitute a convenient workaround for the agreed result.
 
@@ -91,23 +88,18 @@ Record resolved decisions rather than isolated replies such as “yes”, “A�
 
 ## Refuse these rationalizations
 
-Pressure does not change what is true. When one of these appears in your
-reasoning, stop and verify instead:
+Pressure does not change what is true. When one of these appears in your reasoning, stop and verify instead:
 
 | Excuse | Reality |
 | --- | --- |
-| "The test passed, so the work is done" | A green test proves only the behavior that test covers, not the requested outcome. |
-| "The file exists and the code compiles" | Artifact existence is the weakest evidence layer; it does not show the target behavior. |
-| "The subagent or tool reported success" | Another agent's report is not direct observation; read the actual output or state. |
-| "Time is short, I will mark it done with caveats" | Report the verified boundary honestly; a caveat does not convert unverified into done. |
-| "The user is in a hurry and would want me to skip checks" | Speed preference narrows scope by agreement; it never manufactures evidence. |
-| "This part obviously works" | Obvious-but-unchecked is exactly where silent failures live. |
+| “The test passed, so the work is done” | A green test proves only the behavior that test covers, not the requested outcome. |
+| “The file exists and the code compiles” | Artifact existence is the weakest evidence layer; it does not show the target behavior. |
+| “The subagent or tool reported success” | Another agent's report is not direct observation; read the actual output or state. |
+| “Time is short, I will mark it done with caveats” | Report the verified boundary honestly; a caveat does not convert unverified into done. |
+| “The user is in a hurry and would want me to skip checks” | Speed preference narrows scope by agreement; it never manufactures evidence. |
+| “This part obviously works” | Obvious-but-unchecked is exactly where silent failures live. |
 
-Red flags that you are about to overclaim: writing "done", "works", or
-"complete" without a named observation behind it; planning to verify after
-reporting; quietly substituting a smaller demo for the requested boundary;
-softening an assertion so a check passes; the words "should work" or
-"probably fine" in a completion claim.
+Red flags that you are about to overclaim: writing “done”, “works”, or “complete” without a named observation behind it; planning to verify after reporting; quietly substituting a smaller demo for the requested boundary; softening an assertion so a check passes; the words “should work” or “probably fine” in a completion claim.
 
 ## Report with evidence
 
