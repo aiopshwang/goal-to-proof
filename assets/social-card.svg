@@ -23,7 +23,7 @@
   <text x="120" y="104" fill="#DDE1FF" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="650" letter-spacing=".8">AI AGENT SKILL</text>
   <text x="72" y="264" fill="#FFFFFF" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="94" font-weight="780" letter-spacing="-4">Goal to Proof</text>
   <text x="78" y="342" fill="#BFC6DD" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="38" font-weight="520">Finish the work. Prove the outcome.</text>
-  <text x="78" y="414" fill="#8F99B6" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="25" font-weight="480">A lightweight closure contract for authorized, non-trivial work.</text>
+  <text x="78" y="414" fill="#8F99B6" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="25" font-weight="480">A lightweight closure contract for evidence-backed work.</text>
   <rect x="76" y="482" width="324" height="62" rx="31" fill="#5B5CF0"/>
   <text x="238" y="522" fill="#FFFFFF" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="680">Codex · Claude Code</text>
   <circle cx="880" cy="332" r="94" fill="none" stroke="#FFFFFF" stroke-width="34"/>
