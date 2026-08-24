@@ -8,7 +8,13 @@
 
 Goal to Proof is a lightweight closure contract for AI agents. It turns authorized, non-trivial work into an observed outcome instead of a plausible completion claim.
 
-It does not give an agent new permissions, choose your goals, or force a heavyweight process onto simple work. It changes the definition of “done”: each in-scope requirement needs direct, scope-matched evidence from the latest relevant state.
+It does not give an agent new permissions, choose your goals, or force a heavyweight process onto simple work. It changes exactly one thing — the definition of "done": each in-scope requirement needs direct, scope-matched evidence from the latest relevant state.
+
+```bash
+npx skills add aiopshwang/goal-to-proof
+```
+
+One command installs the canonical Agent Skills package. Codex and Claude Code marketplace routes are covered in [Install](#install).
 
 ## The problem it solves
 
@@ -20,13 +26,17 @@ Agents often stop one boundary too early:
 - a push succeeded, but the public artifact was never read back;
 - a proxy check passed, so the broader outcome was implied rather than observed.
 
-Goal to Proof keeps the user in control while making the agent responsible for execution and verification inside the approved boundary.
+Each of these produces a completion report that reads fine — until you ask for proof. Without a closure contract:
 
-| The user owns | The agent owns inside the authorized boundary |
-| --- | --- |
-| Goals, values, authority, risk tolerance, material choices | Method, sequencing, reversible implementation choices, diagnostics, execution, verification |
+> "The release was pushed successfully."
 
-## The closure contract
+With Goal to Proof:
+
+> "The release tag exists on the public remote, the release page is readable without repository credentials, and the published archive contains the expected skill files."
+
+The second report is stronger only because those observations were actually made. When direct proof is unavailable, the skill requires precise labels instead: **verified**, **partially verified**, or **not verified**.
+
+## How it works: the closure contract
 
 For work that needs real closure, the skill identifies four things:
 
@@ -35,7 +45,17 @@ For work that needs real closure, the skill identifies four things:
 3. **Proof** — the most direct practical observation that separates success from plausible-looking failure.
 4. **Boundaries** — what is authorized, excluded, or requires new authority.
 
-The agent then chooses the lightest workflow that can reach that result, completes the dependent steps, and maps every completion claim to evidence.
+The agent then chooses the lightest workflow that can reach that result, completes the dependent steps, and maps every completion claim to evidence. The user stays in control while the agent is responsible for execution and verification inside the approved boundary:
+
+| The user owns | The agent owns inside the authorized boundary |
+| --- | --- |
+| Goals, values, authority, risk tolerance, material choices | Method, sequencing, reversible implementation choices, diagnostics, execution, verification |
+
+## What makes it different
+
+- **A completion gate, not another methodology.** Domain skills still own planning, design, debugging, research, and implementation; Goal to Proof only defines when the work counts as done.
+- **Claim-shaped proof discipline.** Evidence must match the scope of the claim and come from the latest relevant state — a convenient proxy check never stands in for the requested outcome.
+- **Published, evidence-scoped validation.** The repository ships a public evaluation gate — activation, behavior, and hard-gate cases with recorded results in [`evals/`](evals/) — and claims nothing beyond what those records support.
 
 ## When to use it
 
@@ -93,18 +113,6 @@ Use $goal-to-proof to carry this approved change through the real target and pro
 
 The skill may also activate automatically when its description matches a non-trivial closure task. Explicit invocation is useful when the main risk is premature completion.
 
-## What changes in practice
-
-Without a closure contract:
-
-> “The release was pushed successfully.”
-
-With Goal to Proof:
-
-> “The release tag exists on the public remote, the release page is readable without repository credentials, and the published archive contains the expected skill files.”
-
-The second report is stronger only because those observations were actually made. The skill requires precise labels when direct proof is unavailable: **verified**, **partially verified**, or **not verified**.
-
 ## Design principles
 
 - **Outcome over artifact:** a generated thing is not automatically a usable result.
@@ -117,12 +125,6 @@ The second report is stronger only because those observations were actually made
 
 Read the full [product principles](docs/product-principles.md) and [methodology](https://aiopshwang.github.io/goal-to-proof/methodology.html).
 
-## Origin and privacy
-
-The initial behavior model was distilled from aggregate analysis of prior real working sessions. The analysis looked for repeated operating patterns such as intent alignment, scope control, autonomous execution inside approval boundaries, end-to-end verification, durable checkpoints, and evidence-first reporting.
-
-Raw conversations were never included in this repository. Personal names, secrets, one-off preferences, private content, session transcripts, and private corpus metadata were excluded from the published skill. The source material informed the design; it is not a performance benchmark.
-
 ## Validation and claims
 
 This project separates three different facts:
@@ -132,6 +134,12 @@ This project separates three different facts:
 3. **Task outcome:** an agent using the skill improves closure on a defined evaluation case.
 
 Passing one layer does not prove the next. See [Benchmarks & validation](https://aiopshwang.github.io/goal-to-proof/benchmarks.html) for the evaluation contract and scoped evidence. No universal productivity or success-rate claim is made.
+
+## Origin and privacy
+
+The initial behavior model was distilled from aggregate analysis of prior real working sessions. The analysis looked for repeated operating patterns such as intent alignment, scope control, autonomous execution inside approval boundaries, end-to-end verification, durable checkpoints, and evidence-first reporting.
+
+Raw conversations were never included in this repository. Personal names, secrets, one-off preferences, private content, session transcripts, and private corpus metadata were excluded from the published skill. The source material informed the design; it is not a performance benchmark.
 
 ## Project map
 
