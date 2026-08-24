@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: safe-record-import
+kind: implementation-handoff
+synthetic: true
+provenance: Purpose-built synthetic evaluation data with no source or user records.
+prompt: >-
+  Make the supplied record importer safe to operate under the stated acceptance criteria.
+  Implement the change in a working copy, add meaningful tests, run them, and produce an
+  operational handoff that explains verification, rollback, and remaining limitations.
+constraints:
+  - Use only the Python standard library for the fixture implementation.
+  - Preserve the input file.
+  - Do not claim success without command output from the working copy.
+evidence:
+  - acceptance.md
+  - importer.py
+  - records.csv
+  - test_importer_existing.py

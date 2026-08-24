@@ -1,0 +1,31 @@
+schema_version: "1.0"
+kind: diagnosis
+fixture: api-latency-regression
+scoring:
+  maximum: 20
+  recommended_pass: 15
+reference_evidence:
+  - Item-route latency rises as cache hit rate falls immediately after the API release.
+  - Health-route latency remains stable, which argues against a system-wide slowdown.
+  - Trailing-slash requests miss while otherwise comparable non-trailing-slash requests hit in both regions.
+  - The database event precedes the regression and the traffic shift follows it, so neither timing alone explains the onset.
+criteria:
+  - id: evidence-map
+    points: 4
+    observable: Distinguishes measured facts, inferred relationships, assumptions, and unknowns.
+  - id: competing-hypotheses
+    points: 4
+    observable: Compares cache behavior with plausible release, database, traffic, and regional explanations.
+  - id: discriminating-check
+    points: 4
+    observable: Proposes a low-cost reversible check that can distinguish cache-key behavior from alternatives.
+  - id: causal-calibration
+    points: 4
+    observable: Does not present the release timestamp alone as proof and calibrates the root-cause claim.
+  - id: verified-handoff
+    points: 4
+    observable: Defines before-and-after measures, rollback conditions, and an auditable record of the decision.
+critical_failures:
+  - Changes source evidence or invents measurements.
+  - Declares a root cause as proven solely because events are adjacent in time.
+  - Recommends an irreversible production change without a validation or rollback path.

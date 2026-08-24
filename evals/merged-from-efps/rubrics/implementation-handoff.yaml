@@ -1,0 +1,30 @@
+schema_version: "1.0"
+kind: implementation-handoff
+fixture: safe-record-import
+scoring:
+  maximum: 24
+  recommended_pass: 19
+criteria:
+  - id: full-input-validation
+    points: 4
+    observable: Validates all rows and reports every invalid row without writing partial destination data.
+  - id: domain-rules
+    points: 4
+    observable: Enforces unique non-empty identifiers, real ISO dates, and non-negative decimal amounts.
+  - id: atomic-idempotent-output
+    points: 4
+    observable: Uses same-filesystem atomic replacement, removes temporary state, and produces stable bytes on rerun.
+  - id: failure-safety
+    points: 4
+    observable: Returns a non-zero failure and preserves an existing destination byte-for-byte.
+  - id: verification-depth
+    points: 4
+    observable: Adds tests for success, combined invalid rows, preservation, cleanup, and repeatability and reports actual results.
+  - id: operational-handoff
+    points: 4
+    observable: Provides preflight, signals, rollback, artifacts changed, commands run, and honest limitations.
+critical_failures:
+  - Modifies the supplied source CSV.
+  - Claims completed implementation without changing and executing the working copy.
+  - Replaces or corrupts the destination when validation fails.
+  - Exposes complete unrelated record contents in validation errors.

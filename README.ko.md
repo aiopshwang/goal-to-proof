@@ -147,6 +147,19 @@ docs/                          GitHub Pages 원본
 
 저장소 루트가 곧 플러그인 루트입니다. 하나의 표준 `SKILL.md`만 유지하고, 플랫폼 패키지는 서로 다른 복사본 대신 그 파일을 가리킵니다.
 
+## aiopshwang 스킬 패밀리
+
+함께 쓰기 좋은 독립 Agent Skill들:
+
+- [verify-regression-tests](https://github.com/aiopshwang/verify-regression-tests) — 회귀 테스트가 의도한 결함을 실제로 잡는지 증명.
+- [ship-mobile-app](https://github.com/aiopshwang/ship-mobile-app) — 도메인·상태·라이프사이클·플랫폼·릴리스 경계를 관통하는 프로덕션 모바일 작업.
+- [data-analysis-ml-agent-skills](https://github.com/aiopshwang/data-analysis-ml-agent-skills) — 의사결정 수준 데이터 분석·ML: 감사, 누수 안전 실험, 검증, 재현 가능한 인계.
+
+`evidence-first-problem-solving`은 v1.1.0에서 이 스킬로 병합되었습니다.
+진단 루프는
+[references/diagnosis-and-proof.md](skills/goal-to-proof/references/diagnosis-and-proof.md)에서
+확인할 수 있습니다.
+
 ## 기여
 
 이슈와 범위가 분명한 풀 리퀘스트를 환영합니다. 행동을 바꾸는 제안에는 변경 전 실패하는 사례가 필요하며, 단순 작업에서 스킬이 불필요하게 활성화되지 않아야 합니다. [CONTRIBUTING.md](CONTRIBUTING.md)와 [행동 강령](CODE_OF_CONDUCT.md)을 확인하세요.

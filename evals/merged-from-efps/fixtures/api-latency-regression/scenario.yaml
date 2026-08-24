@@ -1,0 +1,17 @@
+schema_version: "1.0"
+id: api-latency-regression
+kind: diagnosis
+synthetic: true
+provenance: Purpose-built synthetic evaluation data with no source or user records.
+prompt: >-
+  A read API became slow after a morning release. Diagnose the most defensible cause from
+  the supplied evidence, state what remains uncertain, and propose the smallest safe action
+  that can confirm or correct the problem. Do not edit the evidence files.
+constraints:
+  - Treat all names, timestamps, and measurements as synthetic.
+  - Do not assume temporal correlation alone proves causation.
+  - Keep any proposed change reversible.
+evidence:
+  - metrics.csv
+  - release-events.csv
+  - request-samples.csv

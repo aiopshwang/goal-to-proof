@@ -1,0 +1,9 @@
+time,region,request_path,derived_cache_key,cache_result,duration_ms
+09:58,A,/items/42,/items/42,hit,84
+09:58,B,/items/42,/items/42,hit,91
+10:03,A,/items/42/,/items/42/,miss,451
+10:03,B,/items/42/,/items/42/,miss,463
+10:04,A,/items/42,/items/42,hit,88
+10:04,B,/items/42,/items/42,hit,93
+10:07,A,/items/73/,/items/73/,miss,479
+10:07,B,/items/73/,/items/73/,miss,488

@@ -147,6 +147,18 @@ docs/                          GitHub Pages source
 
 The repository root is the plugin root. There is one canonical `SKILL.md`; platform packages point to it rather than maintaining divergent copies.
 
+## aiopshwang skill family
+
+Independent, evidence-first Agent Skills that work well together:
+
+- [verify-regression-tests](https://github.com/aiopshwang/verify-regression-tests) — prove that a regression test actually detects its intended defect.
+- [ship-mobile-app](https://github.com/aiopshwang/ship-mobile-app) — production mobile work across domain, state, lifecycle, platform, and release boundaries.
+- [data-analysis-ml-agent-skills](https://github.com/aiopshwang/data-analysis-ml-agent-skills) — decision-grade data analysis and ML: audits, leakage-safe experiments, validation, reproducible handoff.
+
+`evidence-first-problem-solving` was merged into this skill at v1.1.0; its
+diagnosis loop lives in
+[references/diagnosis-and-proof.md](skills/goal-to-proof/references/diagnosis-and-proof.md).
+
 ## Contributing
 
 Issues and focused pull requests are welcome. Behavioral changes should include a case that would fail without the change and should preserve non-trigger behavior for simple work. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
