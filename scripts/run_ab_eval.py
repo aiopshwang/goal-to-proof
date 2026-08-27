@@ -37,6 +37,7 @@ COMPLETION_NEGATION = re.compile(
     re.IGNORECASE,
 )
 CASE_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9+_-]{0,63}\Z")
+SANDBOX_HEADER = re.compile(r"^sandbox:\s*(?P<mode>[a-z-]+)", re.MULTILINE)
 
 
 @dataclass
@@ -94,6 +95,37 @@ def load_cases(repo_root: Path) -> dict[str, dict[str, Any]]:
                 raise ValueError(f"duplicate case ID: {case_id}")
             catalog[case_id] = case
     return catalog
+
+
+def case_prompt(case: dict[str, Any], mode: str) -> str:
+    """Return the prompt for one arm.
+
+    The explicit prompt names the skill, which is right for the activation
+    suite and wrong for an A/B: it would tell a baseline arm to use a skill it
+    does not have. The neutral prompt states the same task without naming it.
+    """
+    if mode == "neutral":
+        neutral = case.get("neutral_prompt")
+        if not isinstance(neutral, str) or not neutral.strip():
+            raise KeyError(f"{case['id']}: neutral prompt is required for A/B runs")
+        return neutral
+    return case["prompt"]
+
+
+SKILL_PATH_MARKERS = (".agents/skills/goal-to-proof", ".agents\\skills\\goal-to-proof")
+
+
+def skill_activated(transcript: str, *, arm: str, host: str) -> bool:
+    """Report whether the candidate arm actually loaded the skill.
+
+    A candidate run that never loaded it measures nothing, so the number is
+    recorded per run rather than assumed.
+    """
+    if arm != "candidate":
+        return False
+    if host == "codex":
+        return any(marker in transcript for marker in SKILL_PATH_MARKERS)
+    return '"Skill"' in transcript and "goal-to-proof" in transcript
 
 
 def install_fixture(workspace: Path, case: dict[str, Any]) -> None:
@@ -202,27 +234,65 @@ def snapshot_manifest(values: dict[str, bytes]) -> dict[str, dict[str, Any]]:
     }
 
 
-def isolated_env(config_home: Path) -> dict[str, str]:
-    env: dict[str, str] = {}
-    for key in ("PATH", "LANG", "LC_ALL", "LC_CTYPE", "TERM", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR"):
-        if key in os.environ:
-            env[key] = os.environ[key]
-    env["HOME"] = str(config_home)
-    env["CODEX_HOME"] = str(config_home)
+def eval_env() -> dict[str, str]:
+    """Inherit the host environment, leaving HOME and CODEX_HOME alone.
+
+    Redirecting them into a temporary directory breaks Codex authentication:
+    the credential lives in the real CODEX_HOME and a redirected run answers
+    401. The A/B contrast comes from the skill, not from a pristine home, so
+    the host environment is held constant across both arms instead of being
+    replaced.
+    """
+    env = dict(os.environ)
     env["GIT_CONFIG_NOSYSTEM"] = "1"
     env["GIT_TERMINAL_PROMPT"] = "0"
     return env
 
 
-def prepare_codex_home(config_home: Path, arm: str, repo_root: Path) -> None:
-    config_home.mkdir(parents=True, exist_ok=True)
-    if arm == "candidate":
-        source = repo_root / "skills/goal-to-proof"
-        if not source.is_dir():
-            raise FileNotFoundError(f"canonical skill is missing: {source}")
-        destination = config_home / "skills/goal-to-proof"
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source, destination)
+def install_workspace_skill(workspace: Path, repo_root: Path) -> None:
+    """Place the canonical skill where a Codex session discovers it."""
+    source = repo_root / "skills/goal-to-proof"
+    if not source.is_dir():
+        raise FileNotFoundError(f"canonical skill is missing: {source}")
+    destination = workspace / ".agents/skills/goal-to-proof"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination)
+
+
+def codex_argv(
+    *,
+    codex_bin: str,
+    workspace: Path,
+    model: str | None,
+    effort: str | None,
+    final_path: Path,
+) -> list[str]:
+    """Build the Codex command for one arm.
+
+    `--ignore-user-config` is deliberately absent: it silently resets the
+    sandbox to read-only, which on Windows also stops the agent reading its
+    own workspace. User configuration is held constant across arms instead.
+    """
+    argv = [
+        codex_bin, "exec",
+        "--color", "never",
+        "--skip-git-repo-check",
+        "-c", "project_doc_max_bytes=0",
+        "--sandbox", "workspace-write",
+        "--cd", str(workspace),
+        "--output-last-message", str(final_path),
+    ]
+    if model:
+        argv.extend(["--model", model])
+    if effort:
+        argv.extend(["-c", f'model_reasoning_effort="{effort}"'])
+    return argv
+
+
+def resolved_sandbox(transcript: str) -> str | None:
+    """Read the sandbox mode Codex actually resolved, from its header."""
+    match = SANDBOX_HEADER.search(transcript)
+    return match.group("mode") if match else None
 
 
 def extract_final_from_events(events: str) -> str:
@@ -413,6 +483,8 @@ def run_arm(
     case_output: Path,
     codex_bin: str,
     model: str | None,
+    effort: str | None = None,
+    prompt_mode: str = "explicit",
     timeout: int,
 ) -> ArmResult:
     arm_output = safe_join(case_output, arm)
@@ -420,31 +492,23 @@ def run_arm(
     with tempfile.TemporaryDirectory(prefix=f"goal-to-proof-{case['id']}-{arm}-") as temp:
         temp_root = Path(temp)
         workspace = temp_root / "workspace"
-        config_home = temp_root / "codex-home"
         workspace.mkdir()
-        prepare_codex_home(config_home, arm, repo_root)
-        env = isolated_env(config_home)
+        env = eval_env()
         install_fixture(workspace, case)
+        if arm == "candidate":
+            install_workspace_skill(workspace, repo_root)
         initialize_git(workspace, env)
         before = snapshot(workspace)
 
         last_message = safe_join(arm_output, "final.txt")
-        argv = [
-            codex_bin,
-            "exec",
-            "--json",
-            "--color", "never",
-            "--ephemeral",
-            "--ignore-user-config",
-            "--ignore-rules",
-            "--skip-git-repo-check",
-            "--sandbox", "workspace-write",
-            "--cd", str(workspace),
-            "--output-last-message", str(last_message),
-        ]
-        if model:
-            argv.extend(["--model", model])
-        argv.append(HARNESS_PREFIX + case["prompt"])
+        argv = codex_argv(
+            codex_bin=codex_bin,
+            workspace=workspace,
+            model=model,
+            effort=effort,
+            final_path=last_message,
+        )
+        argv.append(HARNESS_PREFIX + case_prompt(case, prompt_mode))
         write_json(safe_join(arm_output, "command.json"), {
             "argv": argv[:-1] + ["<HARNESS_PREFIX + CASE_PROMPT>"],
             "cwd": "<temporary-workspace>",
@@ -462,8 +526,14 @@ def run_arm(
             returncode = 124
             events = exc.stdout if isinstance(exc.stdout, str) else ""
             stderr = exc.stderr if isinstance(exc.stderr, str) else ""
-        safe_join(arm_output, "events.jsonl").write_text(events, encoding="utf-8")
+        safe_join(arm_output, "transcript.txt").write_text(events, encoding="utf-8")
         safe_join(arm_output, "stderr.txt").write_text(stderr, encoding="utf-8")
+        sandbox_mode = resolved_sandbox(events)
+        invalid_reason = None
+        if timed_out:
+            invalid_reason = "timeout"
+        elif sandbox_mode != "workspace-write":
+            invalid_reason = f"sandbox resolved to {sandbox_mode!r}, not 'workspace-write'"
         if last_message.is_file():
             final = last_message.read_text(encoding="utf-8")
         else:
@@ -502,6 +572,10 @@ def run_arm(
         machine_passed = returncode == 0 and not timed_out and all(item.passed for item in checks) and not gate_failures
         oracle_payload = {
             "machine_status": "pass" if machine_passed else "fail",
+            "invalid": invalid_reason is not None,
+            "invalid_reason": invalid_reason,
+            "resolved_sandbox": sandbox_mode,
+            "skill_activated": skill_activated(events, arm=arm, host="codex"),
             "checks": [asdict(item) for item in checks],
             "hard_gate_failures": gate_failures,
             "manual_review": {
