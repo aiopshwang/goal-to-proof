@@ -1,5 +1,6 @@
 """Unit tests for the A/B runner's host handling."""
 
+import json
 import os
 import sys
 import tempfile
@@ -46,6 +47,30 @@ class CodexEnvironmentTest(unittest.TestCase):
         self.assertFalse(run_ab_eval.skill_activated(loaded, arm="baseline", host="codex"))
         self.assertFalse(run_ab_eval.skill_activated("no skill here", arm="candidate", host="codex"))
 
+    def test_claude_activation_ignores_the_init_listing(self):
+        listing = json.dumps({
+            "type": "system",
+            "subtype": "init",
+            "slash_commands": ["goal-to-proof"],
+        })
+        self.assertFalse(run_ab_eval.skill_activated(listing, arm="candidate", host="claude"))
+
+    def test_claude_activation_counts_a_skill_tool_call(self):
+        call = json.dumps({
+            "type": "assistant",
+            "message": {"content": [
+                {"type": "tool_use", "name": "Skill", "input": {"skill": "goal-to-proof"}}
+            ]},
+        })
+        self.assertTrue(run_ab_eval.skill_activated(call, arm="candidate", host="claude"))
+
+    def test_claude_final_response_is_the_result_event(self):
+        stream = "\n".join([
+            json.dumps({"type": "assistant", "message": {"content": []}}),
+            json.dumps({"type": "result", "result": "the final answer"}),
+        ])
+        self.assertEqual(run_ab_eval.claude_final_response(stream), "the final answer")
+
     def test_resolved_sandbox_reads_header(self):
         header = (
             "workdir: c:\\w\nmodel: gpt-5.6-sol\napproval: never\n"
@@ -54,6 +79,34 @@ class CodexEnvironmentTest(unittest.TestCase):
         self.assertEqual(run_ab_eval.resolved_sandbox(header), "workspace-write")
         self.assertEqual(run_ab_eval.resolved_sandbox("sandbox: read-only\n"), "read-only")
         self.assertIsNone(run_ab_eval.resolved_sandbox("no header here"))
+
+
+class ClaudeHostTest(unittest.TestCase):
+    def _argv(self, arm):
+        return run_ab_eval.claude_argv(
+            claude_bin="claude", model="sonnet", arm=arm,
+            repo_root=REPO_ROOT, tools="Bash,Read,Write,Edit,Glob,Grep",
+        )
+
+    def test_candidate_arm_loads_the_plugin(self):
+        argv = self._argv("candidate")
+        self.assertIn("--plugin-dir", argv)
+        self.assertEqual(argv[argv.index("--plugin-dir") + 1], str(REPO_ROOT))
+
+    def test_baseline_arm_loads_no_plugin(self):
+        self.assertNotIn("--plugin-dir", self._argv("baseline"))
+
+    def test_both_arms_exclude_user_settings(self):
+        for arm in ("baseline", "candidate"):
+            argv = self._argv(arm)
+            self.assertIn("--setting-sources", argv)
+            self.assertEqual(argv[argv.index("--setting-sources") + 1], "")
+
+    def test_arms_differ_only_by_the_plugin(self):
+        baseline = self._argv("baseline")
+        candidate = self._argv("candidate")
+        self.assertEqual(baseline, [item for item in candidate
+                                    if item not in {"--plugin-dir", str(REPO_ROOT)}])
 
 
 class InterpreterResolutionTest(unittest.TestCase):
