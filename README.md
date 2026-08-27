@@ -162,6 +162,7 @@ Independent, evidence-first Agent Skills that work well together:
 - [verify-regression-tests](https://github.com/aiopshwang/verify-regression-tests) — prove that a regression test actually detects its intended defect.
 - [ship-mobile-app](https://github.com/aiopshwang/ship-mobile-app) — production mobile work across domain, state, lifecycle, platform, and release boundaries.
 - [data-analysis-ml-agent-skills](https://github.com/aiopshwang/data-analysis-ml-agent-skills) — decision-grade data analysis and ML: audits, leakage-safe experiments, validation, reproducible handoff.
+- [fresh-eyes-check](https://github.com/aiopshwang/fresh-eyes-check) — a context-free second model checks whether an earlier instruction still fits before you act on it.
 
 `evidence-first-problem-solving` was merged into this skill at v1.1.0; its
 diagnosis loop lives in
