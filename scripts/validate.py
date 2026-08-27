@@ -440,6 +440,15 @@ def validate_evals(root: Path, report: Report) -> None:
         else:
             _expect("$goal-to-proof" not in prompt, report, "eval-trigger-prompt", path,
                     f"{case_id}: trigger prompt must not explicitly name the skill")
+        neutral = case.get("neutral_prompt")
+        if neutral is not None:
+            _expect(isinstance(neutral, str) and bool(neutral.strip()), report,
+                    "eval-neutral-prompt", path,
+                    f"{case_id}: neutral_prompt must be a non-empty string")
+            _expect(isinstance(neutral, str) and "goal-to-proof" not in neutral, report,
+                    "eval-neutral-prompt", path,
+                    f"{case_id}: neutral_prompt must not name the skill; a baseline arm "
+                    "cannot be told to use a skill it does not have")
         for field in ("requirements", "prohibitions"):
             values = expected.get(field)
             _expect(isinstance(values, list) and values and all(isinstance(item, str) and item.strip() for item in values),

@@ -56,5 +56,23 @@ class CodexEnvironmentTest(unittest.TestCase):
         self.assertIsNone(run_ab_eval.resolved_sandbox("no header here"))
 
 
+class PromptFairnessTest(unittest.TestCase):
+    def test_runnable_cases_have_neutral_prompts(self):
+        cases = run_ab_eval.load_cases(REPO_ROOT)
+        for case_id in ("B07", "B08", "B09"):
+            neutral = cases[case_id]["neutral_prompt"]
+            self.assertNotIn("goal-to-proof", neutral)
+            self.assertNotIn("$", neutral)
+
+    def test_case_prompt_selects_by_mode(self):
+        case = run_ab_eval.load_cases(REPO_ROOT)["B07"]
+        self.assertIn("$goal-to-proof", run_ab_eval.case_prompt(case, "explicit"))
+        self.assertNotIn("goal-to-proof", run_ab_eval.case_prompt(case, "neutral"))
+
+    def test_neutral_mode_refuses_a_case_without_one(self):
+        with self.assertRaises(KeyError):
+            run_ab_eval.case_prompt({"id": "X01", "prompt": "do it"}, "neutral")
+
+
 if __name__ == "__main__":
     unittest.main()

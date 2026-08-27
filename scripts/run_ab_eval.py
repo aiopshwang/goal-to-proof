@@ -632,7 +632,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--arm", choices=("baseline", "candidate", "both"), default="both")
     parser.add_argument("--output", type=Path, required=True, help="new directory for event, diff, and oracle logs")
     parser.add_argument("--codex-bin", default="codex")
-    parser.add_argument("--model", help="optional Codex model override")
+    parser.add_argument("--model", help="optional model override")
+    parser.add_argument("--effort", help="optional Codex reasoning-effort override")
+    parser.add_argument(
+        "--prompt-mode",
+        choices=("explicit", "neutral"),
+        default="explicit",
+        help="explicit names the skill (activation suite); neutral does not (A/B arms)",
+    )
     parser.add_argument("--timeout", type=int, default=900, help="seconds per model run (default: 900)")
     parser.add_argument("--dry-run", action="store_true", help="write the run plan without invoking Codex")
     args = parser.parse_args(argv)
@@ -706,6 +713,8 @@ def main(argv: list[str] | None = None) -> int:
                 case_output=case_output,
                 codex_bin=args.codex_bin,
                 model=args.model,
+                effort=args.effort,
+                prompt_mode=args.prompt_mode,
                 timeout=args.timeout,
             )
             arm_results.append(asdict(result))
