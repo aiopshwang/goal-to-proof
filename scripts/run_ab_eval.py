@@ -97,6 +97,19 @@ def load_cases(repo_root: Path) -> dict[str, dict[str, Any]]:
     return catalog
 
 
+def resolve_argv(argv: list[str]) -> list[str]:
+    """Map the portable oracle interpreter name onto this host's interpreter.
+
+    Case files name `python3` because that is the portable spelling. On
+    Windows it resolves to an App Execution Alias stub that exits 9009 or 49
+    without running anything, which would fail every oracle regardless of what
+    the agent did.
+    """
+    if argv and argv[0] in {"python3", "python"}:
+        return [sys.executable, *argv[1:]]
+    return list(argv)
+
+
 def case_prompt(case: dict[str, Any], mode: str) -> str:
     """Return the prompt for one arm.
 
@@ -406,10 +419,12 @@ def evaluate_check(
         argv = check["argv"]
         if argv[0] not in {"python", "python3"}:
             return CheckResult(kind, False, f"oracle command is not allow-listed: {argv[0]}")
+        resolved = resolve_argv(argv)
         try:
-            result = _run(argv, cwd=workspace, env=env, timeout=timeout)
+            result = _run(resolved, cwd=workspace, env=env, timeout=timeout)
             command_log.append({
                 "argv": argv,
+                "resolved_argv": resolved,
                 "returncode": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,

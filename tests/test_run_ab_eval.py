@@ -56,6 +56,16 @@ class CodexEnvironmentTest(unittest.TestCase):
         self.assertIsNone(run_ab_eval.resolved_sandbox("no header here"))
 
 
+class InterpreterResolutionTest(unittest.TestCase):
+    def test_python3_maps_to_running_interpreter(self):
+        resolved = run_ab_eval.resolve_argv(["python3", "-m", "unittest", "-q"])
+        self.assertEqual(resolved[0], sys.executable)
+        self.assertEqual(resolved[1:], ["-m", "unittest", "-q"])
+
+    def test_other_commands_pass_through(self):
+        self.assertEqual(run_ab_eval.resolve_argv(["git", "status"]), ["git", "status"])
+
+
 class PromptFairnessTest(unittest.TestCase):
     def test_runnable_cases_have_neutral_prompts(self):
         cases = run_ab_eval.load_cases(REPO_ROOT)

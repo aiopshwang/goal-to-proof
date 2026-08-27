@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable
 from urllib.parse import unquote, urlsplit
 
@@ -177,8 +177,14 @@ def skill_frontmatter(path: Path, report: Report) -> dict[str, Any] | None:
 def is_safe_relative_path(value: str) -> bool:
     if not isinstance(value, str) or not value or "\x00" in value:
         return False
+    normalized = value.replace("\\", "/")
+    if normalized.startswith("/") or PureWindowsPath(value).is_absolute():
+        # `Path("/absolute").is_absolute()` is False on Windows because the
+        # string carries no drive, so a POSIX-absolute path would slip through
+        # a platform-dependent check.
+        return False
     path = Path(value)
-    return not path.is_absolute() and ".." not in path.parts and path.as_posix() == value.replace("\\", "/")
+    return not path.is_absolute() and ".." not in path.parts and path.as_posix() == normalized
 
 
 def is_safe_case_id(value: Any) -> bool:
