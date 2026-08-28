@@ -28,6 +28,10 @@ with a concise account of the outcome, direct evidence, and any remaining uncert
 TASK:
 """
 IGNORED_SNAPSHOT_PARTS = {".git", "__pycache__", ".pytest_cache"}
+# `Skill` must be present: without it Claude lists the skill but has no way
+# to invoke it, so the candidate arm would be measured with the skill
+# unreachable and every activation count would be a harness artifact.
+DEFAULT_CLAUDE_TOOLS = "Bash,Read,Write,Edit,Glob,Grep,Skill"
 COMPLETION_CLAIM = re.compile(
     r"\b(?:complete(?:d)?|fixed|finished|verified|shipped|published|deployed|all tests pass(?:ed)?)\b",
     re.IGNORECASE,
@@ -37,6 +41,7 @@ COMPLETION_NEGATION = re.compile(
     re.IGNORECASE,
 )
 CASE_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9+_-]{0,63}\Z")
+SANDBOX_HEADER = re.compile(r"^sandbox:\s*(?P<mode>[a-z-]+)", re.MULTILINE)
 
 
 @dataclass
@@ -96,11 +101,98 @@ def load_cases(repo_root: Path) -> dict[str, dict[str, Any]]:
     return catalog
 
 
+def resolve_argv(argv: list[str]) -> list[str]:
+    """Map the portable oracle interpreter name onto this host's interpreter.
+
+    Case files name `python3` because that is the portable spelling. On
+    Windows it resolves to an App Execution Alias stub that exits 9009 or 49
+    without running anything, which would fail every oracle regardless of what
+    the agent did.
+    """
+    if argv and argv[0] in {"python3", "python"}:
+        return [sys.executable, *argv[1:]]
+    return list(argv)
+
+
+def case_prompt(case: dict[str, Any], mode: str) -> str:
+    """Return the prompt for one arm.
+
+    The explicit prompt names the skill, which is right for the activation
+    suite and wrong for an A/B: it would tell a baseline arm to use a skill it
+    does not have. The neutral prompt states the same task without naming it.
+    """
+    if mode == "neutral":
+        neutral = case.get("neutral_prompt")
+        if not isinstance(neutral, str) or not neutral.strip():
+            raise KeyError(f"{case['id']}: neutral prompt is required for A/B runs")
+        return neutral
+    return case["prompt"]
+
+
+SKILL_PATH_MARKERS = (".agents/skills/goal-to-proof", ".agents\\skills\\goal-to-proof")
+
+
+def skill_activated(transcript: str, *, arm: str, host: str) -> bool:
+    """Report whether the candidate arm actually loaded the skill.
+
+    A candidate run that never loaded it measures nothing, so the number is
+    recorded per run rather than assumed.
+    """
+    if arm != "candidate":
+        return False
+    if host == "codex":
+        return any(marker in transcript for marker in SKILL_PATH_MARKERS)
+    # Claude Code announces every available skill in its `system` init event,
+    # so a plain string match would score activation for runs that ignored the
+    # skill. Only a Skill tool call counts.
+    for line in transcript.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") != "assistant":
+            continue
+        for block in event.get("message", {}).get("content", []):
+            if block.get("type") != "tool_use" or block.get("name") != "Skill":
+                continue
+            if "goal-to-proof" in json.dumps(block.get("input", {})):
+                return True
+    return False
+
+
 def install_fixture(workspace: Path, case: dict[str, Any]) -> None:
     for fixture in case["setup"]["files"]:
         target = safe_join(workspace, fixture["path"])
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(fixture["content"], encoding="utf-8")
+
+
+def remove_workspace(path: Path | str) -> None:
+    """Delete an evaluation workspace without ever raising.
+
+    The agent runs python inside the workspace, and Windows refuses to delete
+    the read-only `__pycache__` it leaves behind. A cleanup failure must never
+    destroy a matrix whose model calls have already been paid for.
+    """
+    shutil.rmtree(path, ignore_errors=True)
+
+
+def launch_command(argv: list[str]) -> list[str]:
+    """Make an argument array executable on this host.
+
+    npm installs `codex` as a .CMD shim, which CreateProcess cannot start
+    directly, so a shim is invoked through cmd.exe. The prompt never travels in
+    argv — it is piped on stdin — so cmd.exe has no user text to re-parse.
+    """
+    resolved = shutil.which(argv[0])
+    if resolved is None:
+        return list(argv)
+    if Path(resolved).suffix.lower() in {".cmd", ".bat"}:
+        return ["cmd.exe", "/c", resolved, *argv[1:]]
+    return [resolved, *argv[1:]]
 
 
 def _run(
@@ -109,14 +201,24 @@ def _run(
     cwd: Path,
     env: dict[str, str],
     timeout: int,
+    stdin_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    if not argv or not all(isinstance(item, str) and item for item in argv):
-        raise ValueError("commands must be non-empty argument arrays")
+    # An empty string is a legitimate option value — `--setting-sources ""`
+    # is how Claude is told to load no settings at all — so only the
+    # executable itself must be non-empty.
+    if not argv or not all(isinstance(item, str) for item in argv) or not argv[0]:
+        raise ValueError("commands must be argument arrays naming an executable")
     return subprocess.run(
-        argv,
+        launch_command(argv),
         cwd=cwd,
         env=env,
+        input=stdin_text,
         text=True,
+        # Agent output is UTF-8. Decoding it with the host locale codec kills
+        # the reader thread on a non-UTF-8 console and silently loses the
+        # transcript, so the encoding is pinned rather than inherited.
+        encoding="utf-8",
+        errors="replace",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         timeout=timeout,
@@ -158,7 +260,14 @@ def snapshot(workspace: Path) -> dict[str, bytes]:
             if path.is_symlink():
                 result[relative] = b"SYMLINK\0" + os.readlink(path).encode("utf-8", errors="surrogateescape")
             else:
-                result[relative] = path.read_bytes()
+                try:
+                    result[relative] = path.read_bytes()
+                except OSError as exc:
+                    # The agent can leave a file the harness cannot read — a
+                    # locked handle, or an entry Windows refuses. Record the
+                    # fact instead of losing a matrix that has already been
+                    # paid for; the marker still shows up as a change.
+                    result[relative] = f"UNREADABLE\0{exc.__class__.__name__}".encode("utf-8")
     return result
 
 
@@ -202,27 +311,112 @@ def snapshot_manifest(values: dict[str, bytes]) -> dict[str, dict[str, Any]]:
     }
 
 
-def isolated_env(config_home: Path) -> dict[str, str]:
-    env: dict[str, str] = {}
-    for key in ("PATH", "LANG", "LC_ALL", "LC_CTYPE", "TERM", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR"):
-        if key in os.environ:
-            env[key] = os.environ[key]
-    env["HOME"] = str(config_home)
-    env["CODEX_HOME"] = str(config_home)
+def eval_env() -> dict[str, str]:
+    """Inherit the host environment, leaving HOME and CODEX_HOME alone.
+
+    Redirecting them into a temporary directory breaks Codex authentication:
+    the credential lives in the real CODEX_HOME and a redirected run answers
+    401. The A/B contrast comes from the skill, not from a pristine home, so
+    the host environment is held constant across both arms instead of being
+    replaced.
+    """
+    env = dict(os.environ)
     env["GIT_CONFIG_NOSYSTEM"] = "1"
     env["GIT_TERMINAL_PROMPT"] = "0"
     return env
 
 
-def prepare_codex_home(config_home: Path, arm: str, repo_root: Path) -> None:
-    config_home.mkdir(parents=True, exist_ok=True)
+def install_workspace_skill(workspace: Path, repo_root: Path) -> None:
+    """Place the canonical skill where a Codex session discovers it."""
+    source = repo_root / "skills/goal-to-proof"
+    if not source.is_dir():
+        raise FileNotFoundError(f"canonical skill is missing: {source}")
+    destination = workspace / ".agents/skills/goal-to-proof"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination)
+
+
+def codex_argv(
+    *,
+    codex_bin: str,
+    workspace: Path,
+    model: str | None,
+    effort: str | None,
+    final_path: Path,
+) -> list[str]:
+    """Build the Codex command for one arm.
+
+    `--ignore-user-config` is deliberately absent: it silently resets the
+    sandbox to read-only, which on Windows also stops the agent reading its
+    own workspace. User configuration is held constant across arms instead.
+    """
+    argv = [
+        codex_bin, "exec",
+        "--color", "never",
+        "--skip-git-repo-check",
+        "-c", "project_doc_max_bytes=0",
+        "--sandbox", "workspace-write",
+        "--cd", str(workspace),
+        "--output-last-message", str(final_path),
+    ]
+    if model:
+        argv.extend(["--model", model])
+    if effort:
+        argv.extend(["-c", f'model_reasoning_effort="{effort}"'])
+    return argv
+
+
+def claude_argv(
+    *,
+    claude_bin: str,
+    model: str,
+    arm: str,
+    repo_root: Path,
+    tools: str,
+) -> list[str]:
+    """Build the Claude Code command for one arm.
+
+    `--setting-sources ""` keeps the host's personal skills out of both arms,
+    so the candidate's `--plugin-dir` is the only difference between them.
+    """
+    argv = [
+        claude_bin, "-p",
+        "--setting-sources", "",
+        "--no-session-persistence",
+        "--permission-mode", "bypassPermissions",
+        "--output-format", "stream-json",
+        "--verbose",
+        # No MCP servers: the host has dozens configured, and while both
+        # arms would load them equally they add latency and noise.
+        "--strict-mcp-config",
+        "--model", model,
+        "--tools", tools,
+    ]
     if arm == "candidate":
-        source = repo_root / "skills/goal-to-proof"
-        if not source.is_dir():
-            raise FileNotFoundError(f"canonical skill is missing: {source}")
-        destination = config_home / "skills/goal-to-proof"
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source, destination)
+        argv.extend(["--plugin-dir", str(repo_root)])
+    return argv
+
+
+def claude_final_response(stream: str) -> str:
+    """Read the final assistant text out of a stream-json transcript."""
+    final = ""
+    for line in stream.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") == "result" and isinstance(event.get("result"), str):
+            final = event["result"]
+    return final
+
+
+def resolved_sandbox(transcript: str) -> str | None:
+    """Read the sandbox mode Codex actually resolved, from its header."""
+    match = SANDBOX_HEADER.search(transcript)
+    return match.group("mode") if match else None
 
 
 def extract_final_from_events(events: str) -> str:
@@ -336,10 +530,12 @@ def evaluate_check(
         argv = check["argv"]
         if argv[0] not in {"python", "python3"}:
             return CheckResult(kind, False, f"oracle command is not allow-listed: {argv[0]}")
+        resolved = resolve_argv(argv)
         try:
-            result = _run(argv, cwd=workspace, env=env, timeout=timeout)
+            result = _run(resolved, cwd=workspace, env=env, timeout=timeout)
             command_log.append({
                 "argv": argv,
+                "resolved_argv": resolved,
                 "returncode": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
@@ -413,58 +609,98 @@ def run_arm(
     case_output: Path,
     codex_bin: str,
     model: str | None,
+    effort: str | None = None,
+    prompt_mode: str = "explicit",
+    host: str = "codex",
+    claude_bin: str = "claude",
+    tools: str = DEFAULT_CLAUDE_TOOLS,
+    arm_output: Path | None = None,
     timeout: int,
 ) -> ArmResult:
-    arm_output = safe_join(case_output, arm)
+    arm_output = arm_output if arm_output is not None else safe_join(case_output, arm)
     arm_output.mkdir(parents=True, exist_ok=False)
-    with tempfile.TemporaryDirectory(prefix=f"goal-to-proof-{case['id']}-{arm}-") as temp:
+    # The workspace path appears in agent output, and the blind judge reads
+    # that output. A prefix naming the skill or the arm would tell the judge
+    # which arm it is scoring, so the directory name carries neither.
+    # The agent runs python inside the workspace and Windows refuses to
+    # delete the __pycache__ it leaves behind. TemporaryDirectory raises
+    # from its own cleanup hook even with ignore_cleanup_errors, which
+    # destroys a matrix after its model calls have already been paid for,
+    # so cleanup is done here and cannot raise.
+    temp = tempfile.mkdtemp(prefix="ab-eval-")
+    try:
         temp_root = Path(temp)
         workspace = temp_root / "workspace"
-        config_home = temp_root / "codex-home"
         workspace.mkdir()
-        prepare_codex_home(config_home, arm, repo_root)
-        env = isolated_env(config_home)
+        env = eval_env()
         install_fixture(workspace, case)
+        if arm == "candidate" and host == "codex":
+            # Codex discovers a workspace skill; Claude receives it through
+            # --plugin-dir, so its workspace stays free of skill files.
+            install_workspace_skill(workspace, repo_root)
         initialize_git(workspace, env)
         before = snapshot(workspace)
 
         last_message = safe_join(arm_output, "final.txt")
-        argv = [
-            codex_bin,
-            "exec",
-            "--json",
-            "--color", "never",
-            "--ephemeral",
-            "--ignore-user-config",
-            "--ignore-rules",
-            "--skip-git-repo-check",
-            "--sandbox", "workspace-write",
-            "--cd", str(workspace),
-            "--output-last-message", str(last_message),
-        ]
-        if model:
-            argv.extend(["--model", model])
-        argv.append(HARNESS_PREFIX + case["prompt"])
+        prompt = HARNESS_PREFIX + case_prompt(case, prompt_mode)
+        if host == "claude":
+            argv = claude_argv(
+                claude_bin=claude_bin,
+                model=model or "sonnet",
+                arm=arm,
+                repo_root=repo_root,
+                tools=tools,
+            )
+        else:
+            argv = codex_argv(
+                codex_bin=codex_bin,
+                workspace=workspace,
+                model=model,
+                effort=effort,
+                final_path=last_message,
+            )
+        if host == "codex":
+            # `-` tells Codex to read the prompt from stdin; Claude reads piped
+            # stdin whenever no prompt argument is present.
+            argv.append("-")
         write_json(safe_join(arm_output, "command.json"), {
-            "argv": argv[:-1] + ["<HARNESS_PREFIX + CASE_PROMPT>"],
+            "argv": argv,
+            "stdin": "<HARNESS_PREFIX + CASE_PROMPT>",
             "cwd": "<temporary-workspace>",
             "arm": arm,
         })
 
         timed_out = False
         try:
-            result = _run(argv, cwd=workspace, env=env, timeout=timeout)
+            result = _run(argv, cwd=workspace, env=env, timeout=timeout, stdin_text=prompt)
             returncode = result.returncode
-            events = result.stdout
-            stderr = result.stderr
+            # Codex prints its header and whole session to stderr and only the
+            # final message to stdout; Claude streams JSON events to stdout.
+            events = result.stderr if host == "codex" else result.stdout
+            stderr = result.stdout if host == "codex" else result.stderr
         except subprocess.TimeoutExpired as exc:
             timed_out = True
             returncode = 124
-            events = exc.stdout if isinstance(exc.stdout, str) else ""
-            stderr = exc.stderr if isinstance(exc.stderr, str) else ""
-        safe_join(arm_output, "events.jsonl").write_text(events, encoding="utf-8")
+            captured = {
+                "stdout": exc.stdout if isinstance(exc.stdout, str) else "",
+                "stderr": exc.stderr if isinstance(exc.stderr, str) else "",
+            }
+            events = captured["stderr"] if host == "codex" else captured["stdout"]
+            stderr = captured["stdout"] if host == "codex" else captured["stderr"]
+        safe_join(arm_output, "transcript.txt").write_text(events, encoding="utf-8")
         safe_join(arm_output, "stderr.txt").write_text(stderr, encoding="utf-8")
-        if last_message.is_file():
+        sandbox_mode = resolved_sandbox(events) if host == "codex" else None
+        invalid_reason = None
+        if timed_out:
+            invalid_reason = "timeout"
+        elif host == "codex" and sandbox_mode != "workspace-write":
+            invalid_reason = f"sandbox resolved to {sandbox_mode!r}, not 'workspace-write'"
+        if host == "claude":
+            final = claude_final_response(events)
+            last_message.write_text(final, encoding="utf-8")
+            if not final.strip() and not invalid_reason:
+                invalid_reason = "no final result event in the Claude transcript"
+        elif last_message.is_file():
             final = last_message.read_text(encoding="utf-8")
         else:
             final = extract_final_from_events(events)
@@ -502,6 +738,11 @@ def run_arm(
         machine_passed = returncode == 0 and not timed_out and all(item.passed for item in checks) and not gate_failures
         oracle_payload = {
             "machine_status": "pass" if machine_passed else "fail",
+            "invalid": invalid_reason is not None,
+            "invalid_reason": invalid_reason,
+            "resolved_sandbox": sandbox_mode,
+            "skill_activated": skill_activated(events, arm=arm, host=host),
+            "host": host,
             "checks": [asdict(item) for item in checks],
             "hard_gate_failures": gate_failures,
             "manual_review": {
@@ -520,6 +761,9 @@ def run_arm(
             manual_review_required=bool(oracle["manual"]),
             hard_gate_failures=gate_failures,
         )
+    finally:
+        remove_workspace(temp)
+
 
 
 def dry_run_plan(
@@ -529,6 +773,12 @@ def dry_run_plan(
     output: Path,
     codex_bin: str,
     model: str | None,
+    host: str = "codex",
+    claude_bin: str = "claude",
+    tools: str = DEFAULT_CLAUDE_TOOLS,
+    effort: str | None = None,
+    prompt_mode: str = "explicit",
+    repo_root: Path | None = None,
 ) -> None:
     plans = []
     for case in selected:
@@ -537,12 +787,19 @@ def dry_run_plan(
                 "case": case["id"],
                 "arm": arm,
                 "fixture_files": [item["path"] for item in case["setup"]["files"]],
-                "codex_argv": [
-                    codex_bin, "exec", "--json", "--ephemeral", "--ignore-user-config",
-                    "--ignore-rules", "--sandbox", "workspace-write",
-                    *(["--model", model] if model else []),
-                    "<HARNESS_PREFIX + CASE_PROMPT>",
-                ],
+                "argv": (
+                    claude_argv(
+                        claude_bin=claude_bin, model=model or "sonnet", arm=arm,
+                        repo_root=repo_root, tools=tools,
+                    )
+                    if host == "claude"
+                    else codex_argv(
+                        codex_bin=codex_bin, workspace=Path("<temporary-workspace>"),
+                        model=model, effort=effort,
+                        final_path=Path("<arm-output>/final.txt"),
+                    )
+                ) + ["<HARNESS_PREFIX + CASE_PROMPT>"],
+                "prompt": case_prompt(case, prompt_mode),
                 "workspace_oracles": case["expected"]["oracle"]["workspace"],
                 "response_oracles": case["expected"]["oracle"]["response"],
                 "manual_criteria": case["expected"]["oracle"]["manual"],
@@ -558,13 +815,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--arm", choices=("baseline", "candidate", "both"), default="both")
     parser.add_argument("--output", type=Path, required=True, help="new directory for event, diff, and oracle logs")
     parser.add_argument("--codex-bin", default="codex")
-    parser.add_argument("--model", help="optional Codex model override")
+    parser.add_argument("--claude-bin", default="claude")
+    parser.add_argument("--host", choices=("codex", "claude"), default="codex",
+                        help="which agent plays the role under test")
+    parser.add_argument("--tools", default=DEFAULT_CLAUDE_TOOLS,
+                        help="Claude tool list; identical for both arms")
+    parser.add_argument("--model", help="optional model override")
+    parser.add_argument("--effort", help="optional Codex reasoning-effort override")
+    parser.add_argument(
+        "--prompt-mode",
+        choices=("explicit", "neutral"),
+        default="explicit",
+        help="explicit names the skill (activation suite); neutral does not (A/B arms)",
+    )
+    parser.add_argument("--reps", type=int, default=1,
+                        help="independent repetitions per case and arm (model output varies)")
     parser.add_argument("--timeout", type=int, default=900, help="seconds per model run (default: 900)")
     parser.add_argument("--dry-run", action="store_true", help="write the run plan without invoking Codex")
     args = parser.parse_args(argv)
 
     if args.timeout < 30:
         parser.error("--timeout must be at least 30 seconds")
+    if args.reps < 1:
+        parser.error("--reps must be at least 1")
     repo_root = Path(__file__).resolve().parents[1]
     try:
         catalog = load_cases(repo_root)
@@ -594,29 +867,45 @@ def main(argv: list[str] | None = None) -> int:
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "cases": selected_ids,
         "arms": arms,
+        "reps": args.reps,
         "model": args.model,
+        "host": args.host,
+        "prompt_mode": args.prompt_mode,
+        "effort": args.effort,
         "codex_binary": args.codex_bin,
+        "claude_binary": args.claude_bin,
         "dry_run": args.dry_run,
         "harness_controls": {
-            "temporary_CODEX_HOME_per_arm": True,
-            "user_config_ignored": True,
-            "project_rules_ignored": True,
+            "temporary_workspace_per_run": True,
+            "temporary_CODEX_HOME_per_arm": False,
+            "user_config_ignored": False,
+            "project_doc_suppressed": True,
+            "claude_setting_sources_disabled": args.host == "claude",
             "candidate_skill_installed_only_in_candidate_arm": True,
             "network_use_disallowed_by_harness_prompt": True,
             "os_level_no_egress_claimed": False,
             "credential_files_copied": False,
             "credential_isolation_claimed": False,
-            "authentication": "host-supported external credential broker or keychain only",
+            "authentication": "the host's own Codex or Claude credential, unchanged",
+            "held_constant_not_eliminated": (
+                "Host configuration is loaded identically by both arms. It cannot produce the "
+                "contrast; it bounds how far the result generalizes. Ignoring it is not an "
+                "option: --ignore-user-config silently resets the Codex sandbox to read-only."
+            ),
         },
     }
     write_json(safe_join(output, "run.json"), metadata)
     if args.dry_run:
-        dry_run_plan(selected=selected, arms=arms, output=output, codex_bin=args.codex_bin, model=args.model)
+        dry_run_plan(selected=selected, arms=arms, output=output, codex_bin=args.codex_bin,
+                     model=args.model, host=args.host, claude_bin=args.claude_bin,
+                     tools=args.tools, effort=args.effort, prompt_mode=args.prompt_mode,
+                     repo_root=repo_root)
         print(f"Dry-run plan written to {output}")
         return 0
 
-    if shutil.which(args.codex_bin) is None:
-        parser.error(f"Codex executable not found: {args.codex_bin}")
+    required_bin = args.claude_bin if args.host == "claude" else args.codex_bin
+    if shutil.which(required_bin) is None:
+        parser.error(f"executable not found: {required_bin}")
     results: dict[str, dict[str, Any]] = {}
     failures = False
     for case in selected:
@@ -625,17 +914,29 @@ def main(argv: list[str] | None = None) -> int:
         write_json(safe_join(case_output, "case.json"), case)
         arm_results = []
         for arm in arms:
-            result = run_arm(
-                arm=arm,
-                case=case,
-                repo_root=repo_root,
-                case_output=case_output,
-                codex_bin=args.codex_bin,
-                model=args.model,
-                timeout=args.timeout,
-            )
-            arm_results.append(asdict(result))
-            failures = failures or not result.machine_checks_passed
+            for rep in range(1, args.reps + 1):
+                result = run_arm(
+                    arm=arm,
+                    case=case,
+                    repo_root=repo_root,
+                    case_output=case_output,
+                    arm_output=safe_join(case_output, arm) / f"rep-{rep}",
+                    codex_bin=args.codex_bin,
+                    model=args.model,
+                    effort=args.effort,
+                    prompt_mode=args.prompt_mode,
+                    host=args.host,
+                    claude_bin=args.claude_bin,
+                    tools=args.tools,
+                    timeout=args.timeout,
+                )
+                record = asdict(result)
+                record["rep"] = rep
+                arm_results.append(record)
+                failures = failures or not result.machine_checks_passed
+                print(f"  {case['id']} {arm} rep-{rep}: "
+                      f"{'machine-pass' if result.machine_checks_passed else 'machine-fail'}",
+                      flush=True)
         comparison = {
             "case": case["id"],
             "results": arm_results,
@@ -643,10 +944,7 @@ def main(argv: list[str] | None = None) -> int:
         }
         write_json(safe_join(case_output, "comparison.json"), comparison)
         results[case["id"]] = comparison
-        print(f"{case['id']}: " + ", ".join(
-            f"{item['arm']}={'machine-pass' if item['machine_checks_passed'] else 'machine-fail'}"
-            for item in arm_results
-        ))
+        print(f"{case['id']}: {len(arm_results)} runs recorded", flush=True)
     write_json(safe_join(output, "summary.json"), {
         "cases": results,
         "manual_review_complete": False,

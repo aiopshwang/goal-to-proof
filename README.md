@@ -135,6 +135,14 @@ This project separates three different facts:
 
 Passing one layer does not prove the next. See [Benchmarks & validation](https://aiopshwang.github.io/goal-to-proof/benchmarks.html) for the evaluation contract and scoped evidence. No universal productivity or success-rate claim is made.
 
+**What the first live A/B measured** ([full record](evals/results/2026-08-28-live-ab.md)). The same task was given twice under identical conditions — once with the skill reachable, once without — and the two answers were scored by a blind judge on the opposite host.
+
+- On the `B07` fixture with Claude Code and `sonnet`, eight runs per arm: the agent with the skill named its evidence in 8/8 runs against 5/8 without it, and stated its scope honestly in 8/8 against 4/8 (one-tailed Fisher p = 0.038).
+- On Codex with `gpt-5.6-sol` at high reasoning effort, both arms were already near-perfect. These cases cannot detect a difference against that baseline.
+- Under a prompt that does not name the skill, it activated in 9 of 23 candidate runs, all on one case. Asked for by name it activates every time. **Installing this skill does not, on its own, change what an agent does on most tasks.**
+
+Three to eight runs per cell is a small sample, and the record shows a same-size gap arising between two arms that were behaviorally identical. Read it before quoting any of these numbers.
+
 ## Origin and privacy
 
 The initial behavior model was distilled from aggregate analysis of prior real working sessions. The analysis looked for repeated operating patterns such as intent alignment, scope control, autonomous execution inside approval boundaries, end-to-end verification, durable checkpoints, and evidence-first reporting.

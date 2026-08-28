@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable
 from urllib.parse import unquote, urlsplit
 
@@ -177,8 +177,14 @@ def skill_frontmatter(path: Path, report: Report) -> dict[str, Any] | None:
 def is_safe_relative_path(value: str) -> bool:
     if not isinstance(value, str) or not value or "\x00" in value:
         return False
+    normalized = value.replace("\\", "/")
+    if normalized.startswith("/") or PureWindowsPath(value).is_absolute():
+        # `Path("/absolute").is_absolute()` is False on Windows because the
+        # string carries no drive, so a POSIX-absolute path would slip through
+        # a platform-dependent check.
+        return False
     path = Path(value)
-    return not path.is_absolute() and ".." not in path.parts and path.as_posix() == value.replace("\\", "/")
+    return not path.is_absolute() and ".." not in path.parts and path.as_posix() == normalized
 
 
 def is_safe_case_id(value: Any) -> bool:
@@ -440,6 +446,15 @@ def validate_evals(root: Path, report: Report) -> None:
         else:
             _expect("$goal-to-proof" not in prompt, report, "eval-trigger-prompt", path,
                     f"{case_id}: trigger prompt must not explicitly name the skill")
+        neutral = case.get("neutral_prompt")
+        if neutral is not None:
+            _expect(isinstance(neutral, str) and bool(neutral.strip()), report,
+                    "eval-neutral-prompt", path,
+                    f"{case_id}: neutral_prompt must be a non-empty string")
+            _expect(isinstance(neutral, str) and "goal-to-proof" not in neutral, report,
+                    "eval-neutral-prompt", path,
+                    f"{case_id}: neutral_prompt must not name the skill; a baseline arm "
+                    "cannot be told to use a skill it does not have")
         for field in ("requirements", "prohibitions"):
             values = expected.get(field)
             _expect(isinstance(values, list) and values and all(isinstance(item, str) and item.strip() for item in values),

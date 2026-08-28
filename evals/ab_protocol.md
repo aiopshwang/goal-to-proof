@@ -1,20 +1,69 @@
-# Opt-in Codex A/B protocol
+# Opt-in live A/B protocol
 
-The live runner compares the same synthetic task in two temporary environments:
+The live runner gives the same synthetic task to two agents that differ in exactly one way: one
+can reach the skill, the other cannot.
 
-- **baseline** — a fresh temporary `CODEX_HOME` with no Goal to Proof skill;
-- **candidate** — another fresh temporary `CODEX_HOME` containing only the canonical
-  `skills/goal-to-proof` package.
+- **baseline** — no Goal to Proof skill available;
+- **candidate** — the canonical `skills/goal-to-proof` package available, and nothing else changed.
 
-Both arms ignore user configuration and project rules, receive the same isolation preamble, use a
-workspace-write sandbox, start from identical committed fixtures, and run the same oracles. The
-runner uses subprocess argument arrays with `shell=False`; case definitions cannot provide a
-single shell command string.
+How the skill reaches the candidate depends on the host:
+
+| Host | Candidate receives | Baseline receives |
+| --- | --- | --- |
+| Codex | `.agents/skills/goal-to-proof/` copied into the temporary workspace | nothing |
+| Claude Code | `--plugin-dir <repository>` | no plugin flag |
+
+Both arms receive the same isolation preamble, start from identical committed fixtures, run in a
+fresh temporary workspace, and are scored by the same oracles. The runner uses subprocess argument
+arrays with `shell=False`, and the prompt travels on stdin rather than in the argument array; case
+definitions cannot provide a single shell command string.
+
+## Prompt fairness
+
+`--prompt-mode neutral` gives both arms a prompt that does not name the skill. This is the honest
+A/B condition: an explicit prompt would tell the baseline to use a skill it does not have, and it
+would also hide whether the skill triggers on its own. Activation is therefore part of what gets
+measured, and every candidate run records whether the skill was actually loaded.
+
+`--prompt-mode explicit` uses the original prompts that name the skill. Those belong to the
+activation suite and to a secondary "does the content help once it is in play" comparison. A
+result from the explicit mode is never reported as an A/B.
+
+## What the harness controls, and what it only holds constant
+
+The two arms must be *identical*, not *pristine*. The runner keeps the host's own Codex or Claude
+credential and user configuration and loads them identically in both arms, then records them.
+Configuration cannot produce the contrast; it bounds how far the result generalizes.
+
+Two host facts make the older, stricter isolation impossible rather than merely inconvenient:
+
+- Redirecting `HOME` and `CODEX_HOME` into a temporary directory answers `401`. Codex documents
+  that `--ignore-user-config` still authenticates through `CODEX_HOME`; the credential is not
+  copied anywhere.
+- **`--ignore-user-config` silently overrides `--sandbox`.** With that flag, `-s workspace-write`
+  still resolves to `sandbox: read-only`, and on Windows a read-only Codex session cannot even
+  read its own workspace. A run configured that way produces two crippled arms and a meaningless
+  comparison.
+
+Because of the second point the runner reads the sandbox mode back out of the Codex header and
+marks any run that did not resolve to `workspace-write` as **invalid**. Invalid runs are excluded
+from every rate and reported separately.
 
 The checked-in fixtures and oracle argument arrays are trusted executable evaluation code. Oracle
-commands run after the model call and outside the Codex sandbox. `shell=False` prevents shell-string
-interpretation; it is not a sandbox and does not make a reviewed command harmless. Run live cases
-only from a reviewed, pinned revision, preferably inside a disposable no-egress environment.
+commands run after the model call and outside the agent sandbox. `shell=False` prevents
+shell-string interpretation; it is not a sandbox and does not make a reviewed command harmless.
+Run live cases only from a reviewed, pinned revision, preferably inside a disposable no-egress
+environment.
+
+## Blinding
+
+The blind judge reads only the two final responses. Every mention of the skill is redacted, the
+responses are labelled X and Y in an order the arm cannot predict, and the mapping is written to a
+separate file the judge never receives. The temporary workspace is named `ab-eval-…` for the same
+reason: a directory named after the arm would appear in the agent's own output and tell the judge
+which response it was reading.
+
+Codex runs are judged by Claude and Claude runs by Codex, so no model grades its own work.
 
 ## Preview without a model call
 
@@ -22,68 +71,68 @@ The output directory must be new. The runner never overwrites prior evidence.
 
 ```bash
 python scripts/run_ab_eval.py \
-  --case B07 \
-  --case B08 \
-  --case B09 \
+  --case B07 --case B08 --case B09 \
+  --host codex --prompt-mode neutral \
   --output /tmp/goal-to-proof-ab-plan \
   --dry-run
 ```
 
-This records the arm commands, fixtures, and oracles without invoking Codex.
+This records the arm commands, fixtures, prompts, and oracles without invoking a model.
 
-## Run selected live cases
-
-Codex must already be installed and able to authenticate through a host-supported external
-credential broker or operating-system keychain. The runner never reads or copies credential files
-into its temporary homes. If the host cannot authenticate Codex without such a file, use
-`--dry-run`; do not place credentials in an agent-readable evaluation home.
+## Run the live matrix
 
 ```bash
 python scripts/run_ab_eval.py \
-  --case B07 \
-  --case B08 \
-  --case B09 \
-  --output /tmp/goal-to-proof-ab
+  --case B07 --case B08 --case B09 \
+  --host codex --prompt-mode neutral --reps 3 \
+  --output /tmp/goal-to-proof-ab/codex
+
+python scripts/run_ab_eval.py \
+  --case B07 --case B08 --case B09 \
+  --host claude --model sonnet --prompt-mode neutral --reps 3 \
+  --output /tmp/goal-to-proof-ab/claude
 ```
 
-Use `--model MODEL` to pin a model and `--arm candidate` for a candidate-only smoke run. `--all`
-with the default `--arm both` makes 48 model calls, so it is deliberately opt-in.
+Three repetitions per cell is the minimum that distinguishes an effect from a coin flip, and even
+three is small: a one-run difference is not an effect and must not be reported as one.
 
-Each arm records:
+Then aggregate and judge:
 
-- the redacted command shape and raw JSONL events;
-- stderr and the final response;
-- a unified workspace diff and final file hashes;
-- every oracle command and result;
-- hard-gate failures and pending manual criteria.
+```bash
+python scripts/aggregate_ab.py /tmp/goal-to-proof-ab/codex
+python scripts/blind_judge.py /tmp/goal-to-proof-ab/codex --judge claude
+python scripts/blind_judge.py /tmp/goal-to-proof-ab/claude --judge codex
+```
 
-The case directory also contains a side-by-side comparison. Reviewers should inspect the events,
-diff, command log, final answer, and semantic criteria—not only the aggregate machine status.
+Each run records the command shape, the full session transcript, the final response, a unified
+workspace diff, file hashes, every oracle command with both its declared and resolved argument
+array, hard-gate failures, the resolved sandbox mode, and whether the skill was activated.
 
-## Full aspirational gate
+## Metrics
 
-A fully reviewed candidate release should meet all of these conditions:
+Fixed before any run, in `docs/superpowers/specs/2026-08-28-live-ab-eval-design.md`:
 
-- all 24 candidate arms pass every machine oracle;
-- all pending manual criteria are reviewed and pass;
-- no candidate arm trips a hard gate;
-- all six negative-trigger cases remain direct and low-ceremony;
-- the candidate is no worse than baseline on negative cases and materially improves closure on
-  positive and behavior cases;
-- model, Codex version, operating system, and review identity are recorded with the result.
+| Metric | Meaning | Source |
+| --- | --- | --- |
+| M1 | machine-oracle pass rate | oracles |
+| M2 | hard-gate violations | gates |
+| M3 | unsupported completion claims | blind judge (`H04` is its machine proxy) |
+| M4 | asking for permission the task already granted | final response |
+| M5 | candidate runs that actually loaded the skill | transcript |
 
-No live result is bundled or claimed by this repository unless its logs and review state are
-actually present.
+A candidate cell with M5 below 3/3 is an activation finding, not a behavioral one, and is reported
+as such rather than counted as a success or a null.
 
-## Environment controls and limitations
+## Limitations
 
-The runner separates skill files, user config, project rules, workspaces, and temporary homes for
-the two arms. This is not a claim of strong credential isolation: host brokers, keychains, Codex,
-and the operating system remain outside the harness. The runner also does not make model inference
-deterministic. Results can vary with the Codex binary, model snapshot, provider behavior, operating
-system, installed tools, account policy, and authentication backend. `workspace-write` plus the
-isolation prompt is a safety boundary, but environments that require a strict no-egress guarantee
-should also block network access at the container or operating system layer.
+The runner does not make model inference deterministic. Results vary with the Codex or Claude
+binary, the model snapshot, provider behavior, the operating system, installed tools, account
+policy, and the authentication backend. `workspace-write` plus the isolation prompt is a safety
+boundary; environments needing a strict no-egress guarantee should also block network access at
+the container or operating-system layer.
 
-Raw event logs may contain fixture content or model output. Fixtures use fake values only, but
+Raw transcripts may contain fixture content or model output. Fixtures use fake values only, but
 result directories should still be handled as evaluation evidence and reviewed before sharing.
+
+No live result is claimed by this repository unless its logs and review state are actually present
+under `evals/results/`.

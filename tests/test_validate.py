@@ -21,6 +21,24 @@ import run_ab_eval  # noqa: E402
 import validate  # noqa: E402
 
 
+def _symlinks_available() -> bool:
+    """Creating a symlink needs a privilege Windows does not grant by default."""
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        try:
+            (root / "probe-link").symlink_to(root / "probe-target")
+        except (OSError, NotImplementedError):
+            return False
+        return True
+
+
+SYMLINKS_AVAILABLE = _symlinks_available()
+REQUIRES_SYMLINKS = unittest.skipUnless(
+    SYMLINKS_AVAILABLE,
+    "this host cannot create symlinks; the symlink rejection path is covered on CI",
+)
+
+
 class RepositoryGateTests(unittest.TestCase):
     def test_repository_passes_deterministic_release_gate(self) -> None:
         report = validate.validate_repository(REPO_ROOT)
@@ -47,7 +65,12 @@ class RepositoryGateTests(unittest.TestCase):
         mutations = {
             "B07": {"cli.py": "from greet import greeting\nif __name__ == '__main__': print(greeting('World'))\n"},
             "B08": {"config.json": "{\"telemetry_enabled\": false, \"theme\": \"dark\"}\n"},
-            "B09": {"sandbox_config.json": "{\"feature_enabled\": true}\n"},
+            # B09's oracle checks the state the verifier leaves behind rather
+            # than re-running it, so the simulated pass writes the marker too.
+            "B09": {
+                "sandbox_config.json": "{\"feature_enabled\": true}\n",
+                "SANDBOX_VERIFIED": "ok",
+            },
         }
         for case_id, edits in mutations.items():
             with self.subTest(case=case_id), tempfile.TemporaryDirectory() as raw:
@@ -102,6 +125,7 @@ class ValidatorUnitTests(unittest.TestCase):
             validate.validate_secrets_and_source_hygiene(root, report)
             self.assertTrue(any(issue.code == "secret-pattern" for issue in report.errors))
 
+    @REQUIRES_SYMLINKS
     def test_release_symlink_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -258,6 +282,7 @@ class RunnerUnitTests(unittest.TestCase):
             self.assertIn("-before", diff)
             self.assertIn("+after", diff)
 
+    @REQUIRES_SYMLINKS
     def test_snapshot_records_symlink_without_reading_target(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
