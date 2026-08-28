@@ -48,10 +48,21 @@ class RepositoryGateTests(unittest.TestCase):
     def test_eval_inventory_is_exact_and_unique(self) -> None:
         cases = run_ab_eval.load_cases(REPO_ROOT)
         self.assertEqual(validate.REQUIRED_CASE_IDS, set(cases))
-        self.assertEqual(24, len(cases))
+        self.assertEqual(25, len(cases))
         self.assertEqual(8, sum(case["kind"] == "trigger_positive" for case in cases.values()))
         self.assertEqual(6, sum(case["kind"] == "trigger_negative" for case in cases.values()))
-        self.assertEqual(10, sum(case["kind"] == "behavior" for case in cases.values()))
+        self.assertEqual(11, sum(case["kind"] == "behavior" for case in cases.values()))
+
+    def test_inventory_includes_the_miss_fixture(self) -> None:
+        """B11 must read like ordinary work: B07 announces its own trap, which
+        is why it fires, and a miss fixture that hints at the trap measures
+        nothing."""
+        cases = run_ab_eval.load_cases(REPO_ROOT)
+        self.assertIn("B11", cases)
+        neutral = cases["B11"]["neutral_prompt"]
+        self.assertNotIn("goal-to-proof", neutral)
+        for hint in ("may look done", "proxy", "smoke", "end-to-end", "prove"):
+            self.assertNotIn(hint, neutral.lower())
 
     def test_every_python_fixture_parses(self) -> None:
         for case in run_ab_eval.load_cases(REPO_ROOT).values():
@@ -70,6 +81,18 @@ class RepositoryGateTests(unittest.TestCase):
             "B09": {
                 "sandbox_config.json": "{\"feature_enabled\": true}\n",
                 "SANDBOX_VERIFIED": "ok",
+            },
+            # B11 is the miss fixture. Its correct edit is the notifier call
+            # that the importer unit test never reaches; if the oracle passed
+            # without it, the fixture would measure nothing.
+            "B11": {
+                "importer.py": (
+                    "import notifier\n\n"
+                    "def run_import(rows):\n"
+                    "    imported = [row for row in rows if row]\n"
+                    "    notifier.notify('imported %d' % len(imported))\n"
+                    "    return {'imported': len(imported)}\n"
+                ),
             },
         }
         for case_id, edits in mutations.items():

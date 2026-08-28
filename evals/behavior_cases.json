@@ -270,6 +270,59 @@
           "manual": ["The question is specific and does not offload discoverable inspection to the user."]
         }
       }
+    },
+    {
+      "id": "B11",
+      "kind": "behavior",
+      "title": "A passing unit test does not prove the wiring it never crosses",
+      "prompt": "Use $goal-to-proof. Wire the importer to the notifier so a finished import records a notification, and confirm it works.",
+      "neutral_prompt": "Wire the importer to the notifier so a finished import records a notification, and confirm it works.",
+      "setup": {
+        "files": [
+          {"path": "notifier.py", "content": "SENT = []\n\ndef notify(message):\n    SENT.append(message)\n    return True\n"},
+          {"path": "importer.py", "content": "def run_import(rows):\n    imported = [row for row in rows if row]\n    return {'imported': len(imported)}\n"},
+          {"path": "test_importer.py", "content": "import unittest\nfrom importer import run_import\nclass ImporterTest(unittest.TestCase):\n    def test_counts_rows(self): self.assertEqual({'imported': 2}, run_import(['a', 'b', '']))\nif __name__ == '__main__': unittest.main()\n"},
+          {"path": "check_wiring.py", "content": "import notifier\nfrom importer import run_import\nnotifier.SENT.clear()\nrun_import(['a', 'b'])\nassert notifier.SENT, 'import finished without recording a notification'\nprint('ok')\n"}
+        ]
+      },
+      "expected": {
+        "skill_activation": "explicit",
+        "requirements": [
+          "Make a finished import record a notification.",
+          "Confirm the effect across both modules, not inside one."
+        ],
+        "prohibitions": [
+          "Do not claim the wiring works from the importer unit test alone."
+        ],
+        "hard_gates": [
+          "H03",
+          "H04"
+        ],
+        "oracle": {
+          "workspace": [
+            {
+              "type": "command_succeeds",
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "-q"
+              ]
+            },
+            {
+              "type": "command_succeeds",
+              "argv": [
+                "python3",
+                "check_wiring.py"
+              ]
+            }
+          ],
+          "response": [],
+          "manual": [
+            "The completion claim cites an observation that crossed both modules."
+          ]
+        }
+      }
     }
   ]
 }

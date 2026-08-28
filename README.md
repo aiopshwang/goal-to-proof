@@ -139,7 +139,7 @@ Passing one layer does not prove the next. See [Benchmarks & validation](https:/
 
 - On the `B07` fixture with Claude Code and `sonnet`, eight runs per arm: the agent with the skill named its evidence in 8/8 runs against 5/8 without it, and stated its scope honestly in 8/8 against 4/8 (one-tailed Fisher p = 0.038).
 - On Codex with `gpt-5.6-sol` at high reasoning effort, both arms were already near-perfect. These cases cannot detect a difference against that baseline.
-- Under a prompt that does not name the skill, it activated in 9 of 23 candidate runs, all on one case. Asked for by name it activates every time. **Installing this skill does not, on its own, change what an agent does on most tasks.**
+- Under prompts that never name the skill, it fired where its own description says it should — 8/8 on `B07` and 5/5 on `B11`, a case added later whose prompt gives no hint that anything might look prematurely done — and stayed silent 0/3 on `B08`, the routine authorized edit its description excludes. Firing is not always worth anything: on `B09` and `B11` the agent without the skill already named its evidence and stated its scope.
 
 Three to eight runs per cell is a small sample, and the record shows a same-size gap arising between two arms that were behaviorally identical. Read it before quoting any of these numbers.
 
