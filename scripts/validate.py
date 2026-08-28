@@ -18,6 +18,7 @@ REQUIRED_CASE_IDS = {
     "T+01", "T+02", "T+03", "T+04", "T+05", "T+06", "T+07", "T+08",
     "T-01", "T-02", "T-03", "T-04", "T-05", "T-06",
     "B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10",
+    "B11",
 }
 REQUIRED_GATE_IDS = {"H01", "H02", "H03", "H04", "H05"}
 ALLOWED_ORACLES = {
@@ -476,7 +477,7 @@ def validate_evals(root: Path, report: Report) -> None:
             _expect(isinstance(manual, list) and all(isinstance(item, str) and item.strip() for item in manual),
                     report, "eval-oracle", path, f"{case_id}: oracle.manual must be a string array")
 
-    _expect(kinds == {"trigger_positive": 8, "trigger_negative": 6, "behavior": 10},
+    _expect(kinds == {"trigger_positive": 8, "trigger_negative": 6, "behavior": 11},
             report, "eval-kind-coverage", root / "evals", f"unexpected case counts: {kinds}")
     referenced_gates = {
         gate
