@@ -4,6 +4,42 @@ All notable changes to Goal to Proof are documented in this file. The format fol
 
 ## [Unreleased]
 
+### Added
+
+- The first live A/B evaluation with a control arm, recorded in
+  `evals/results/2026-08-28-live-ab.md`: the same task run with and without
+  the skill on both Codex and Claude Code, scored by a blind judge on the
+  opposite host. Neutral prompts (`--prompt-mode neutral`) so the baseline is
+  not told to use a skill it lacks, repetitions (`--reps`), metric
+  aggregation (`scripts/aggregate_ab.py`), and blind cross-host judging
+  (`scripts/blind_judge.py`).
+- A `neutral_prompt` on every behavior case, each the explicit prompt with
+  the skill invocation removed and nothing else changed.
+
+### Fixed
+
+- The A/B runner could never have produced a valid live result. It redirected
+  `HOME` and `CODEX_HOME`, which fails authentication, and passed
+  `--ignore-user-config`, which silently overrides `--sandbox` back to
+  read-only — and a read-only Codex session on Windows cannot read its own
+  workspace. A run whose sandbox does not resolve to `workspace-write` is now
+  recorded as invalid rather than scored.
+- Oracle argument arrays called `python3`, which on Windows is an App
+  Execution Alias stub that exits without running, failing every oracle
+  regardless of the agent's work.
+- Subprocess output was decoded with the host locale codec, which killed the
+  reader thread on a non-UTF-8 console and lost the transcript.
+- The temporary workspace was named after the arm, and that path appears in
+  the agent's own answer, which the blind judge reads.
+- `B09`'s oracle re-ran a script with a side effect after the agent had
+  already run it; it now checks the state that script leaves behind.
+- Workspace cleanup and an unreadable workspace entry could each destroy a
+  matrix after its model calls had been paid for.
+- `is_safe_relative_path` accepted a POSIX-absolute path on Windows, where
+  `Path("/x").is_absolute()` is false without a drive.
+- Two symlink tests errored on hosts that withhold the privilege; they now
+  skip with a stated reason, so the published release gate passes on Windows.
+
 ## [1.1.0] - 2026-08-24
 
 ### Added
