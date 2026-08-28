@@ -102,6 +102,11 @@ class ClaudeHostTest(unittest.TestCase):
             self.assertIn("--setting-sources", argv)
             self.assertEqual(argv[argv.index("--setting-sources") + 1], "")
 
+    def test_default_tools_include_the_skill_tool(self):
+        """Without it the skill is listed but cannot be invoked, and every
+        activation count becomes a harness artifact rather than a finding."""
+        self.assertIn("Skill", run_ab_eval.DEFAULT_CLAUDE_TOOLS.split(","))
+
     def test_arms_differ_only_by_the_plugin(self):
         baseline = self._argv("baseline")
         candidate = self._argv("candidate")

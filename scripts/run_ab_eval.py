@@ -28,7 +28,10 @@ with a concise account of the outcome, direct evidence, and any remaining uncert
 TASK:
 """
 IGNORED_SNAPSHOT_PARTS = {".git", "__pycache__", ".pytest_cache"}
-DEFAULT_CLAUDE_TOOLS = "Bash,Read,Write,Edit,Glob,Grep"
+# `Skill` must be present: without it Claude lists the skill but has no way
+# to invoke it, so the candidate arm would be measured with the skill
+# unreachable and every activation count would be a harness artifact.
+DEFAULT_CLAUDE_TOOLS = "Bash,Read,Write,Edit,Glob,Grep,Skill"
 COMPLETION_CLAIM = re.compile(
     r"\b(?:complete(?:d)?|fixed|finished|verified|shipped|published|deployed|all tests pass(?:ed)?)\b",
     re.IGNORECASE,
@@ -167,20 +170,45 @@ def install_fixture(workspace: Path, case: dict[str, Any]) -> None:
         target.write_text(fixture["content"], encoding="utf-8")
 
 
+def launch_command(argv: list[str]) -> list[str]:
+    """Make an argument array executable on this host.
+
+    npm installs `codex` as a .CMD shim, which CreateProcess cannot start
+    directly, so a shim is invoked through cmd.exe. The prompt never travels in
+    argv — it is piped on stdin — so cmd.exe has no user text to re-parse.
+    """
+    resolved = shutil.which(argv[0])
+    if resolved is None:
+        return list(argv)
+    if Path(resolved).suffix.lower() in {".cmd", ".bat"}:
+        return ["cmd.exe", "/c", resolved, *argv[1:]]
+    return [resolved, *argv[1:]]
+
+
 def _run(
     argv: list[str],
     *,
     cwd: Path,
     env: dict[str, str],
     timeout: int,
+    stdin_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    if not argv or not all(isinstance(item, str) and item for item in argv):
-        raise ValueError("commands must be non-empty argument arrays")
+    # An empty string is a legitimate option value — `--setting-sources ""`
+    # is how Claude is told to load no settings at all — so only the
+    # executable itself must be non-empty.
+    if not argv or not all(isinstance(item, str) for item in argv) or not argv[0]:
+        raise ValueError("commands must be argument arrays naming an executable")
     return subprocess.run(
-        argv,
+        launch_command(argv),
         cwd=cwd,
         env=env,
+        input=stdin_text,
         text=True,
+        # Agent output is UTF-8. Decoding it with the host locale codec kills
+        # the reader thread on a non-UTF-8 console and silently loses the
+        # transcript, so the encoding is pinned rather than inherited.
+        encoding="utf-8",
+        errors="replace",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         timeout=timeout,
@@ -341,6 +369,9 @@ def claude_argv(
         "--permission-mode", "bypassPermissions",
         "--output-format", "stream-json",
         "--verbose",
+        # No MCP servers: the host has dozens configured, and while both
+        # arms would load them equally they add latency and noise.
+        "--strict-mcp-config",
         "--model", model,
         "--tools", tools,
     ]
@@ -571,7 +602,10 @@ def run_arm(
 ) -> ArmResult:
     arm_output = arm_output if arm_output is not None else safe_join(case_output, arm)
     arm_output.mkdir(parents=True, exist_ok=False)
-    with tempfile.TemporaryDirectory(prefix=f"goal-to-proof-{case['id']}-{arm}-") as temp:
+    # The workspace path appears in agent output, and the blind judge reads
+    # that output. A prefix naming the skill or the arm would tell the judge
+    # which arm it is scoring, so the directory name carries neither.
+    with tempfile.TemporaryDirectory(prefix="ab-eval-") as temp:
         temp_root = Path(temp)
         workspace = temp_root / "workspace"
         workspace.mkdir()
@@ -602,24 +636,34 @@ def run_arm(
                 effort=effort,
                 final_path=last_message,
             )
-        argv.append(prompt)
+        if host == "codex":
+            # `-` tells Codex to read the prompt from stdin; Claude reads piped
+            # stdin whenever no prompt argument is present.
+            argv.append("-")
         write_json(safe_join(arm_output, "command.json"), {
-            "argv": argv[:-1] + ["<HARNESS_PREFIX + CASE_PROMPT>"],
+            "argv": argv,
+            "stdin": "<HARNESS_PREFIX + CASE_PROMPT>",
             "cwd": "<temporary-workspace>",
             "arm": arm,
         })
 
         timed_out = False
         try:
-            result = _run(argv, cwd=workspace, env=env, timeout=timeout)
+            result = _run(argv, cwd=workspace, env=env, timeout=timeout, stdin_text=prompt)
             returncode = result.returncode
-            events = result.stdout
-            stderr = result.stderr
+            # Codex prints its header and whole session to stderr and only the
+            # final message to stdout; Claude streams JSON events to stdout.
+            events = result.stderr if host == "codex" else result.stdout
+            stderr = result.stdout if host == "codex" else result.stderr
         except subprocess.TimeoutExpired as exc:
             timed_out = True
             returncode = 124
-            events = exc.stdout if isinstance(exc.stdout, str) else ""
-            stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+            captured = {
+                "stdout": exc.stdout if isinstance(exc.stdout, str) else "",
+                "stderr": exc.stderr if isinstance(exc.stderr, str) else "",
+            }
+            events = captured["stderr"] if host == "codex" else captured["stdout"]
+            stderr = captured["stdout"] if host == "codex" else captured["stderr"]
         safe_join(arm_output, "transcript.txt").write_text(events, encoding="utf-8")
         safe_join(arm_output, "stderr.txt").write_text(stderr, encoding="utf-8")
         sandbox_mode = resolved_sandbox(events) if host == "codex" else None
