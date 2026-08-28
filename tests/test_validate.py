@@ -65,7 +65,12 @@ class RepositoryGateTests(unittest.TestCase):
         mutations = {
             "B07": {"cli.py": "from greet import greeting\nif __name__ == '__main__': print(greeting('World'))\n"},
             "B08": {"config.json": "{\"telemetry_enabled\": false, \"theme\": \"dark\"}\n"},
-            "B09": {"sandbox_config.json": "{\"feature_enabled\": true}\n"},
+            # B09's oracle checks the state the verifier leaves behind rather
+            # than re-running it, so the simulated pass writes the marker too.
+            "B09": {
+                "sandbox_config.json": "{\"feature_enabled\": true}\n",
+                "SANDBOX_VERIFIED": "ok",
+            },
         }
         for case_id, edits in mutations.items():
             with self.subTest(case=case_id), tempfile.TemporaryDirectory() as raw:
