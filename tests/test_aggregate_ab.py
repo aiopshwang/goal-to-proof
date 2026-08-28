@@ -59,5 +59,17 @@ class AggregateTest(unittest.TestCase):
             self.assertEqual(summary["cases"]["B09"]["candidate"]["invalid"], 1)
 
 
+class IncompleteRunTest(unittest.TestCase):
+    def test_a_rep_without_an_oracle_is_counted_not_fatal(self):
+        """An interrupted run must not cost every other run in the directory."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            _write_rep(root, "B09", "candidate", 1, passed=True, gates=[], activated=True)
+            (root / "B09" / "candidate" / "rep-2").mkdir()
+            summary = aggregate_ab.aggregate(root)
+            self.assertEqual(summary["cases"]["B09"]["candidate"]["m1"], "1/1")
+            self.assertEqual(summary["cases"]["B09"]["candidate"]["incomplete"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

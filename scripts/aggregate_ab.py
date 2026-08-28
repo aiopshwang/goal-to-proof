@@ -52,7 +52,12 @@ def aggregate(run_dir: Path) -> dict[str, Any]:
     for case_dir in sorted(p for p in run_dir.iterdir() if p.is_dir()):
         arms: dict[str, Any] = {}
         for arm_dir in sorted(p for p in case_dir.iterdir() if p.is_dir()):
-            reps = sorted(p for p in arm_dir.iterdir() if p.is_dir())
+            all_reps = sorted(p for p in arm_dir.iterdir() if p.is_dir())
+            # A run interrupted before it wrote its oracle is incomplete, not a
+            # result. Counting it either way would be a lie; crashing on it
+            # would lose every other run in the directory.
+            reps = [rep for rep in all_reps if (rep / "oracle.json").is_file()]
+            incomplete = len(all_reps) - len(reps)
             oracles = {rep: _load(rep / "oracle.json") for rep in reps}
             valid = [rep for rep in reps if not oracles[rep].get("invalid")]
             passes = sum(1 for rep in valid if oracles[rep]["machine_status"] == "pass")
@@ -65,6 +70,7 @@ def aggregate(run_dir: Path) -> dict[str, Any]:
                 "m4": ceremony,
                 "m5": f"{activated}/{len(valid)}",
                 "invalid": len(reps) - len(valid),
+                "incomplete": incomplete,
                 "invalid_reasons": sorted({
                     str(oracles[rep].get("invalid_reason"))
                     for rep in reps if oracles[rep].get("invalid")
