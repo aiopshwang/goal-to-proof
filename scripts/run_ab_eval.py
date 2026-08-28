@@ -260,7 +260,14 @@ def snapshot(workspace: Path) -> dict[str, bytes]:
             if path.is_symlink():
                 result[relative] = b"SYMLINK\0" + os.readlink(path).encode("utf-8", errors="surrogateescape")
             else:
-                result[relative] = path.read_bytes()
+                try:
+                    result[relative] = path.read_bytes()
+                except OSError as exc:
+                    # The agent can leave a file the harness cannot read — a
+                    # locked handle, or an entry Windows refuses. Record the
+                    # fact instead of losing a matrix that has already been
+                    # paid for; the marker still shows up as a change.
+                    result[relative] = f"UNREADABLE\0{exc.__class__.__name__}".encode("utf-8")
     return result
 
 

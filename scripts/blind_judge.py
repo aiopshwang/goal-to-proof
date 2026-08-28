@@ -27,6 +27,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import run_ab_eval  # noqa: E402
+
 SKILL_TOKENS = (
     "goal-to-proof",
     "goal to proof",
@@ -114,22 +118,37 @@ def extract_json(text: str) -> dict[str, Any] | None:
         return None
 
 
+def _spawn(argv: list[str], *, cwd: Path, prompt: str, timeout: int) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        run_ab_eval.launch_command(argv),
+        cwd=cwd,
+        input=prompt,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+        shell=False,
+    )
+
+
 def run_judge(prompt: str, *, judge: str, model: str | None, timeout: int) -> str:
-    if judge == "claude":
-        argv = [
-            "claude", "-p",
-            "--setting-sources", "",
-            "--no-session-persistence",
-            "--tools", "",
-            "--model", model or "sonnet",
-            prompt,
-        ]
-        cwd = Path.cwd()
-        result = subprocess.run(argv, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, timeout=timeout, check=False, shell=False)
-        return result.stdout
-    with tempfile.TemporaryDirectory(prefix="blind-judge-") as temp:
-        empty = Path(temp)
+    """Ask the opposite host to score one pair. The prompt travels on stdin."""
+    temp = tempfile.mkdtemp(prefix="blind-judge-")
+    empty = Path(temp)
+    try:
+        if judge == "claude":
+            argv = [
+                "claude", "-p",
+                "--setting-sources", "",
+                "--no-session-persistence",
+                "--strict-mcp-config",
+                "--tools", "",
+                "--model", model or "sonnet",
+            ]
+            return _spawn(argv, cwd=empty, prompt=prompt, timeout=timeout).stdout
         output = empty / "verdict.md"
         argv = [
             "codex", "exec",
@@ -139,11 +158,12 @@ def run_judge(prompt: str, *, judge: str, model: str | None, timeout: int) -> st
             "--sandbox", "read-only",
             "--cd", str(empty),
             "--output-last-message", str(output),
-            prompt,
+            "-",
         ]
-        subprocess.run(argv, cwd=empty, text=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE, timeout=timeout, check=False, shell=False)
+        _spawn(argv, cwd=empty, prompt=prompt, timeout=timeout)
         return output.read_text(encoding="utf-8") if output.is_file() else ""
+    finally:
+        run_ab_eval.remove_workspace(empty)
 
 
 def collect_pairs(run_dir: Path, seed: int) -> list[dict[str, Any]]:

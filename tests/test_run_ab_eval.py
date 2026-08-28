@@ -59,6 +59,17 @@ class CodexEnvironmentTest(unittest.TestCase):
             run_ab_eval.remove_workspace(victim)
             marker.chmod(stat.S_IWRITE | stat.S_IREAD)
 
+    def test_snapshot_survives_an_unreadable_entry(self):
+        """One file the harness cannot read must not cost the whole matrix."""
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw)
+            (workspace / "ordinary.txt").write_text("fine", encoding="utf-8")
+            # A directory where a file is expected is the shape that crashed a
+            # live run: read_bytes raises PermissionError on Windows.
+            (workspace / "SANDBOX_VERIFIED").mkdir()
+            snapshot = run_ab_eval.snapshot(workspace)
+            self.assertEqual(snapshot["ordinary.txt"], b"fine")
+
     def test_claude_activation_ignores_the_init_listing(self):
         listing = json.dumps({
             "type": "system",
