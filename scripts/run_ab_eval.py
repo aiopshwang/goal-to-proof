@@ -758,12 +758,16 @@ def main(argv: list[str] | None = None) -> int:
         default="explicit",
         help="explicit names the skill (activation suite); neutral does not (A/B arms)",
     )
+    parser.add_argument("--reps", type=int, default=1,
+                        help="independent repetitions per case and arm (model output varies)")
     parser.add_argument("--timeout", type=int, default=900, help="seconds per model run (default: 900)")
     parser.add_argument("--dry-run", action="store_true", help="write the run plan without invoking Codex")
     args = parser.parse_args(argv)
 
     if args.timeout < 30:
         parser.error("--timeout must be at least 30 seconds")
+    if args.reps < 1:
+        parser.error("--reps must be at least 1")
     repo_root = Path(__file__).resolve().parents[1]
     try:
         catalog = load_cases(repo_root)
@@ -793,6 +797,7 @@ def main(argv: list[str] | None = None) -> int:
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "cases": selected_ids,
         "arms": arms,
+        "reps": args.reps,
         "model": args.model,
         "host": args.host,
         "prompt_mode": args.prompt_mode,
@@ -839,22 +844,29 @@ def main(argv: list[str] | None = None) -> int:
         write_json(safe_join(case_output, "case.json"), case)
         arm_results = []
         for arm in arms:
-            result = run_arm(
-                arm=arm,
-                case=case,
-                repo_root=repo_root,
-                case_output=case_output,
-                codex_bin=args.codex_bin,
-                model=args.model,
-                effort=args.effort,
-                prompt_mode=args.prompt_mode,
-                host=args.host,
-                claude_bin=args.claude_bin,
-                tools=args.tools,
-                timeout=args.timeout,
-            )
-            arm_results.append(asdict(result))
-            failures = failures or not result.machine_checks_passed
+            for rep in range(1, args.reps + 1):
+                result = run_arm(
+                    arm=arm,
+                    case=case,
+                    repo_root=repo_root,
+                    case_output=case_output,
+                    arm_output=safe_join(case_output, arm) / f"rep-{rep}",
+                    codex_bin=args.codex_bin,
+                    model=args.model,
+                    effort=args.effort,
+                    prompt_mode=args.prompt_mode,
+                    host=args.host,
+                    claude_bin=args.claude_bin,
+                    tools=args.tools,
+                    timeout=args.timeout,
+                )
+                record = asdict(result)
+                record["rep"] = rep
+                arm_results.append(record)
+                failures = failures or not result.machine_checks_passed
+                print(f"  {case['id']} {arm} rep-{rep}: "
+                      f"{'machine-pass' if result.machine_checks_passed else 'machine-fail'}",
+                      flush=True)
         comparison = {
             "case": case["id"],
             "results": arm_results,
@@ -862,10 +874,7 @@ def main(argv: list[str] | None = None) -> int:
         }
         write_json(safe_join(case_output, "comparison.json"), comparison)
         results[case["id"]] = comparison
-        print(f"{case['id']}: " + ", ".join(
-            f"{item['arm']}={'machine-pass' if item['machine_checks_passed'] else 'machine-fail'}"
-            for item in arm_results
-        ))
+        print(f"{case['id']}: {len(arm_results)} runs recorded", flush=True)
     write_json(safe_join(output, "summary.json"), {
         "cases": results,
         "manual_review_complete": False,
