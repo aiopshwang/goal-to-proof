@@ -170,6 +170,16 @@ def install_fixture(workspace: Path, case: dict[str, Any]) -> None:
         target.write_text(fixture["content"], encoding="utf-8")
 
 
+def remove_workspace(path: Path | str) -> None:
+    """Delete an evaluation workspace without ever raising.
+
+    The agent runs python inside the workspace, and Windows refuses to delete
+    the read-only `__pycache__` it leaves behind. A cleanup failure must never
+    destroy a matrix whose model calls have already been paid for.
+    """
+    shutil.rmtree(path, ignore_errors=True)
+
+
 def launch_command(argv: list[str]) -> list[str]:
     """Make an argument array executable on this host.
 
@@ -605,11 +615,13 @@ def run_arm(
     # The workspace path appears in agent output, and the blind judge reads
     # that output. A prefix naming the skill or the arm would tell the judge
     # which arm it is scoring, so the directory name carries neither.
-    # `ignore_cleanup_errors` matters here: the agent runs python in the
-    # workspace, and Windows refuses to delete the __pycache__ it leaves
-    # behind. Without this the whole matrix dies on cleanup after the model
-    # call has already been paid for.
-    with tempfile.TemporaryDirectory(prefix="ab-eval-", ignore_cleanup_errors=True) as temp:
+    # The agent runs python inside the workspace and Windows refuses to
+    # delete the __pycache__ it leaves behind. TemporaryDirectory raises
+    # from its own cleanup hook even with ignore_cleanup_errors, which
+    # destroys a matrix after its model calls have already been paid for,
+    # so cleanup is done here and cannot raise.
+    temp = tempfile.mkdtemp(prefix="ab-eval-")
+    try:
         temp_root = Path(temp)
         workspace = temp_root / "workspace"
         workspace.mkdir()
@@ -742,6 +754,9 @@ def run_arm(
             manual_review_required=bool(oracle["manual"]),
             hard_gate_failures=gate_failures,
         )
+    finally:
+        remove_workspace(temp)
+
 
 
 def dry_run_plan(

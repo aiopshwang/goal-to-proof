@@ -47,6 +47,18 @@ class CodexEnvironmentTest(unittest.TestCase):
         self.assertFalse(run_ab_eval.skill_activated(loaded, arm="baseline", host="codex"))
         self.assertFalse(run_ab_eval.skill_activated("no skill here", arm="candidate", host="codex"))
 
+    def test_workspace_cleanup_never_raises(self):
+        """A matrix must not die on cleanup after its model calls are paid for."""
+        import stat
+        with tempfile.TemporaryDirectory() as outer:
+            victim = Path(outer) / "workspace"
+            (victim / "__pycache__").mkdir(parents=True)
+            marker = victim / "__pycache__" / "module.pyc"
+            marker.write_bytes(b"x")
+            marker.chmod(stat.S_IREAD)
+            run_ab_eval.remove_workspace(victim)
+            marker.chmod(stat.S_IWRITE | stat.S_IREAD)
+
     def test_claude_activation_ignores_the_init_listing(self):
         listing = json.dumps({
             "type": "system",
