@@ -605,7 +605,11 @@ def run_arm(
     # The workspace path appears in agent output, and the blind judge reads
     # that output. A prefix naming the skill or the arm would tell the judge
     # which arm it is scoring, so the directory name carries neither.
-    with tempfile.TemporaryDirectory(prefix="ab-eval-") as temp:
+    # `ignore_cleanup_errors` matters here: the agent runs python in the
+    # workspace, and Windows refuses to delete the __pycache__ it leaves
+    # behind. Without this the whole matrix dies on cleanup after the model
+    # call has already been paid for.
+    with tempfile.TemporaryDirectory(prefix="ab-eval-", ignore_cleanup_errors=True) as temp:
         temp_root = Path(temp)
         workspace = temp_root / "workspace"
         workspace.mkdir()
