@@ -6,6 +6,11 @@ All notable changes to Goal to Proof are documented in this file. The format fol
 
 ### Added
 
+- Behavior case `B11`, built to look for a miss the trigger might have: a
+  prompt that reads like ordinary work, with no hint that anything might look
+  prematurely done, unlike `B07` which announces its own trap. The skill fired
+  in 5 of 5 runs anyway and the agent without it passed every oracle.
+
 - The first live A/B evaluation with a control arm, recorded in
   `evals/results/2026-08-28-live-ab.md`: the same task run with and without
   the skill on both Codex and Claude Code, scored by a blind judge on the
@@ -17,6 +22,11 @@ All notable changes to Goal to Proof are documented in this file. The format fol
   the skill invocation removed and nothing else changed.
 
 ### Fixed
+
+- The activation figure in `evals/results/2026-08-28-live-ab.md` and both
+  READMEs was reported as "9 of 23 candidate runs", which counted `B08` — a
+  case the description deliberately excludes — as a miss. Activation is now
+  reported per case, with whether it was wanted stated alongside.
 
 - The A/B runner could never have produced a valid live result. It redirected
   `HOME` and `CODEX_HOME`, which fails authentication, and passed
