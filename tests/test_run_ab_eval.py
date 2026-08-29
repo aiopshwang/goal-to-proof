@@ -56,8 +56,14 @@ class CodexEnvironmentTest(unittest.TestCase):
             marker = victim / "__pycache__" / "module.pyc"
             marker.write_bytes(b"x")
             marker.chmod(stat.S_IREAD)
-            run_ab_eval.remove_workspace(victim)
-            marker.chmod(stat.S_IWRITE | stat.S_IREAD)
+            try:
+                run_ab_eval.remove_workspace(victim)  # must not raise, whatever the OS does
+            finally:
+                # Linux deletes a read-only file inside a writable directory;
+                # Windows refuses. Only restore permissions if it survived, or
+                # TemporaryDirectory cannot clean up after this test.
+                if marker.exists():
+                    marker.chmod(stat.S_IWRITE | stat.S_IREAD)
 
     def test_snapshot_survives_an_unreadable_entry(self):
         """One file the harness cannot read must not cost the whole matrix."""

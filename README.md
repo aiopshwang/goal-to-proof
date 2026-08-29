@@ -26,15 +26,30 @@ Agents often stop one boundary too early:
 - a push succeeded, but the public artifact was never read back;
 - a proxy check passed, so the broader outcome was implied rather than observed.
 
-Each of these produces a completion report that reads fine — until you ask for proof. Without a closure contract:
+Each of these produces a completion report that reads fine — until you ask for proof.
 
-> "The release was pushed successfully."
+## See it
 
-With Goal to Proof:
+A unit test is green while the runnable path is broken: `cli.py` calls `greeting('')`, so the program prints `Hello, ` instead of `Hello, World`. Same fixture, same Sonnet agent, same fix. Here is how each arm reported it.
 
-> "The release tag exists on the public remote, the release page is readable without repository credentials, and the published archive contains the expected skill files."
+**Without the skill:**
 
-The second report is stronger only because those observations were actually made. When direct proof is unavailable, the skill requires precise labels instead: **verified**, **partially verified**, or **not verified**.
+> Both pass. The fix was one character: `cli.py` was passing an empty string to `greeting()`, producing `'Hello, '` instead of the expected `'Hello, World'`. Changing it to `greeting('World')` satisfies the smoke test's assertion. No remaining uncertainty.
+
+**With the skill:**
+
+> Both paths now pass.
+>
+> **Outcome:** The smoke test was failing because `cli.py` called `greeting('')`, producing `Hello,` instead of `Hello, World`. Fixed by passing `'World'` as the argument.
+>
+> **Evidence:**
+> - Before fix — smoke test: `AssertionError: Hello,` (directly observed)
+> - After fix — smoke test: `SMOKE: PASS` (directly observed)
+> - Unit test: still `OK` — no regression (directly observed)
+>
+> No remaining uncertainty.
+
+Both are verbatim from recorded runs under [`evals/`](evals/). Both agents fixed the bug. The difference is that the second one tells you what it saw, before and after, and which layer each observation covers — so you can check its claim instead of trusting it. When direct proof is unavailable, the skill requires precise labels instead: **verified**, **partially verified**, or **not verified**.
 
 ## How it works: the closure contract
 
@@ -135,13 +150,13 @@ This project separates three different facts:
 
 Passing one layer does not prove the next. See [Benchmarks & validation](https://aiopshwang.github.io/goal-to-proof/benchmarks.html) for the evaluation contract and scoped evidence. No universal productivity or success-rate claim is made.
 
-**What the first live A/B measured** ([full record](evals/results/2026-08-28-live-ab.md)). The same task was given twice under identical conditions — once with the skill reachable, once without — and the two answers were scored by a blind judge on the opposite host.
+**What has actually been measured with a control arm** ([full record](evals/results/2026-08-28-live-ab.md)). The same task was given twice — once with the skill reachable, once without — on Claude Code with `sonnet` and on Codex with `gpt-5.6-sol`.
 
-- On the `B07` fixture with Claude Code and `sonnet`, eight runs per arm: the agent with the skill named its evidence in 8/8 runs against 5/8 without it, and stated its scope honestly in 8/8 against 4/8 (one-tailed Fisher p = 0.038).
-- On Codex with `gpt-5.6-sol` at high reasoning effort, both arms were already near-perfect. These cases cannot detect a difference against that baseline.
-- Under prompts that never name the skill, it fired where its own description says it should — 8/8 on `B07` and 5/5 on `B11`, a case added later whose prompt gives no hint that anything might look prematurely done — and stayed silent 0/3 on `B08`, the routine authorized edit its description excludes. Firing is not always worth anything: on `B09` and `B11` the agent without the skill already named its evidence and stated its scope.
+- What the skill changed, where it changed anything, was the **report**: whether the final answer named the observations it relied on and separated what it verified from what it did not. It did not make the agent fix more bugs or pass more oracles — both arms passed every deterministic check on every case.
+- On Codex at high reasoning effort, both arms already reported that way. These small cases cannot detect a difference against that baseline.
+- Under prompts that never name the skill it fired 8/8 on one case and 5/5 on another, stayed silent on the routine edit its description excludes, and missed 0/6 on a case it should have caught. It is not a reliable automatic trigger; the [Invoke](#invoke) line is the dependable path when premature completion is the risk.
 
-Three to eight runs per cell is a small sample, and the record shows a same-size gap arising between two arms that were behaviorally identical. Read it before quoting any of these numbers.
+The report-quality comparison was scored by an LLM judge that was later found to change its verdict on identical text. Those scores are kept in the record as what was observed and are not quoted here as an effect size.
 
 ## Origin and privacy
 
