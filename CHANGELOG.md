@@ -21,8 +21,20 @@ All notable changes to Goal to Proof are documented in this file. The format fol
 - A `neutral_prompt` on every behavior case, each the explicit prompt with
   the skill invocation removed and nothing else changed.
 
+### Changed
+
+- The README now leads with a verbatim before/after from the recorded runs
+  instead of a hypothetical, and its validation section claims only what the
+  deterministic layer supports: both arms fixed every case; what the skill
+  changed was the report. Judged comparisons and the p-value are withdrawn
+  from the README after the judge was found to change its verdict on identical
+  text (recorded in `evals/results/2026-08-28-live-ab.md`).
+
 ### Fixed
 
+- `test_workspace_cleanup_never_raises` passed only on Windows: Linux deletes
+  a read-only file inside a writable directory, so the test's own permission
+  restore raised `FileNotFoundError`. CI had been red since the harness landed.
 - The activation figure in `evals/results/2026-08-28-live-ab.md` and both
   READMEs was reported as "9 of 23 candidate runs", which counted `B08` — a
   case the description deliberately excludes — as a miss. Activation is now
